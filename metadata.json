@@ -1,0 +1,8 @@
+{
+  "name": "ProxyNuoiNick - Proxy IPv6 Tốc Độ Cao",
+  "description": "Nền tảng cung cấp giải pháp Proxy IPv6 dân cư tốc độ cao, tối ưu cho việc nuôi nick Facebook, TikTok và làm MMO chuyên nghiệp.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
