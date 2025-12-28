@@ -17,7 +17,11 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
   const [isRenewing, setIsRenewing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showRenewModal, setShowRenewModal] = useState(false);
-  const [renewDuration, setRenewDuration] = useState('1 Tháng');
+  
+  // Sử dụng key đơn giản '1', '3', '6', '12' để tránh lỗi so khớp chuỗi
+  const [durationKey, setDurationKey] = useState('1');
+  const [renewDurationKey, setRenewDurationKey] = useState('1');
+
   const [proxies, setProxies] = useState<ProxyInstance[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [newlyCreatedIds, setNewlyCreatedIds] = useState<Set<string>>(new Set());
@@ -32,20 +36,40 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
   const [form, setForm] = useState({
     location: 'Việt Nam - VNPT (Dân cư)',
     protocol: 'HTTPS',
-    duration: '1 Tháng',
     quantity: 1,
     username: userPhone, 
     password: userPhone  
   });
 
+  // Cấu hình giá trị gói thời gian chuẩn xác
   const pricingConfig = useMemo(() => ({
-    '1 Tháng': { pricePerUnit: 1000, days: 30, label: "1000 VND / 1 Proxy ( khuyến mãi 20% )" },
-    '3 Tháng': { pricePerUnit: 2400, days: 90, label: "800 VND / 1 Proxy ( khuyến mãi 30% )" },
-    '6 Tháng': { pricePerUnit: 3600, days: 180, label: "600 VND / 1 Proxy ( khuyến mãi 40% )" },
-    '12 Tháng': { pricePerUnit: 6000, days: 360, label: "500 VND / 1 Proxy ( khuyến mãi 50% )" },
+    '1': { 
+      label: '1 Tháng', 
+      pricePerUnit: 1000, 
+      days: 30, 
+      promoLabel: "1,000đ / 1 Proxy (Khuyến mãi 20%)" 
+    },
+    '3': { 
+      label: '3 Tháng', 
+      pricePerUnit: 2400, 
+      days: 90, 
+      promoLabel: "800đ / tháng (Khuyến mãi 30%)" 
+    },
+    '6': { 
+      label: '6 Tháng', 
+      pricePerUnit: 3600, 
+      days: 180, 
+      promoLabel: "600đ / tháng (Khuyến mãi 40%)" 
+    },
+    '12': { 
+      label: '12 Tháng', 
+      pricePerUnit: 6000, 
+      days: 360, 
+      promoLabel: "500đ / tháng (Khuyến mãi 50%)" 
+    },
   }), []);
 
-  const currentPricing = pricingConfig[form.duration as keyof typeof pricingConfig] || pricingConfig['1 Tháng'];
+  const currentPricing = pricingConfig[durationKey as keyof typeof pricingConfig];
   const totalPrice = currentPricing.pricePerUnit * form.quantity;
 
   const fetchProxies = useCallback(async (isSilent = false) => {
@@ -75,7 +99,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
 
         const reversedProxies = [...mappedProxies].reverse();
         
-        // Nhận diện Proxy mới tạo bằng cách so sánh với danh sách ID cũ
+        // Nhận diện Proxy mới tạo
         if (prevProxyIdsRef.current.size > 0) {
           const currentIds = new Set(mappedProxies.map((p: any) => p.id?.toString()));
           const addedIds = Array.from(currentIds).filter(id => id && !prevProxyIdsRef.current.has(id));
@@ -85,9 +109,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
           }
         }
         
-        // Cập nhật ref lưu trữ ID để so sánh lần sau
         prevProxyIdsRef.current = new Set(mappedProxies.map((p: any) => p.id?.toString()));
-        
         setProxies(reversedProxies);
       }
     } catch (e) { 
@@ -154,9 +176,10 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
         usernameproxy: form.username,
         tinhtrangproxy: "Không xoay",
         thoigianxoay: 0,
-        soNgay: currentPricing.days,
+        soNgay: Number(currentPricing.days), // Gửi số ngày chuẩn xác
         tenKhach: userPhone
       };
+      
       const response = await fetch("https://proxynuoinick.com/api/api/tasks/start", {
         method: "POST",
         headers: { 
@@ -166,10 +189,9 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
         },
         body: JSON.stringify(payload)
       });
+      
       const result = await response.json();
       if (result.status === "success") {
-        // Cập nhật số dư và danh sách ngay lập tức trước khi thông báo
-        // fetchProxies sẽ tự động tìm các ID mới và đưa vào newlyCreatedIds
         await fetchBalance();
         await fetchProxies(true); 
         alert(`Đặt mua thành công! Proxy mới của bạn đã được thêm vào danh sách.`);
@@ -186,9 +208,11 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       return;
     }
 
-    const renewCost = pricingConfig[renewDuration as keyof typeof pricingConfig].pricePerUnit * targets.length;
+    const selectedPricing = pricingConfig[renewDurationKey as keyof typeof pricingConfig];
+    const renewCost = selectedPricing.pricePerUnit * targets.length;
+    
     if (balance < renewCost) {
-      alert("Số dư không đủ để gia hạn. Vui lòng nạp thêm tiền.");
+      alert("Số dư không đủ để gia hạn.");
       return;
     }
 
@@ -198,7 +222,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       const payload = {
         tenkhach: userPhone,
         selected: selectedStrings,
-        dulieune: renewDuration
+        dulieune: selectedPricing.label // Gửi nhãn "1 Tháng", "3 Tháng"... cho API gia hạn
       };
 
       const response = await fetch("https://proxynuoinick.com/api/api/tasks/giahanproxy", {
@@ -407,20 +431,19 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                   <div>
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block pl-1">{t.duration}</label>
                     <select 
-                      value={form.duration}
-                      onChange={e => setForm({...form, duration: e.target.value})}
+                      value={durationKey}
+                      onChange={e => setDurationKey(e.target.value)}
                       className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3 md:p-4 text-xs md:text-sm font-bold outline-none focus:border-[#f97316] appearance-none"
                     >
-                      <option value="1 Tháng">1 Tháng</option>
-                      <option value="3 Tháng">3 Tháng</option>
-                      <option value="6 Tháng">6 Tháng</option>
-                      <option value="12 Tháng">12 Tháng</option>
+                      {Object.keys(pricingConfig).map(key => (
+                        <option key={key} value={key}>{pricingConfig[key as keyof typeof pricingConfig].label}</option>
+                      ))}
                     </select>
                   </div>
 
                   <div className="bg-[#f97316]/10 border border-[#f97316]/30 p-3 rounded-xl text-center">
                     <span className="text-[#f97316] font-black text-[10px] uppercase tracking-tighter leading-tight block">
-                      {currentPricing.label}
+                      {currentPricing.promoLabel}
                     </span>
                   </div>
 
@@ -734,13 +757,13 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                 <div>
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 block pl-1 opacity-70">Thời gian gia hạn</label>
                   <div className="grid grid-cols-2 gap-3">
-                    {['1 Tháng', '3 Tháng', '6 Tháng', '12 Tháng'].map((duration) => (
+                    {Object.keys(pricingConfig).map((key) => (
                       <button 
-                        key={duration}
-                        onClick={() => setRenewDuration(duration)}
-                        className={`py-4 rounded-xl md:rounded-2xl font-black text-[11px] md:text-xs uppercase tracking-widest transition-all border ${renewDuration === duration ? 'bg-[#f97316] border-[#f97316] text-white shadow-lg shadow-orange-900/40' : 'bg-[#070b14] border-slate-800 text-slate-500 hover:border-[#f97316]/50 hover:text-[#f97316]'}`}
+                        key={key}
+                        onClick={() => setRenewDurationKey(key)}
+                        className={`py-4 rounded-xl md:rounded-2xl font-black text-[11px] md:text-xs uppercase tracking-widest transition-all border ${renewDurationKey === key ? 'bg-[#f97316] border-[#f97316] text-white shadow-lg shadow-orange-900/40' : 'bg-[#070b14] border-slate-800 text-slate-500 hover:border-[#f97316]/50 hover:text-[#f97316]'}`}
                       >
-                        {duration}
+                        {pricingConfig[key as keyof typeof pricingConfig].label}
                       </button>
                     ))}
                   </div>
@@ -749,12 +772,12 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                 <div className="pt-6 border-t border-slate-800/50 flex justify-between items-center">
                    <div className="flex flex-col">
                       <span className="text-slate-500 text-[9px] font-black uppercase tracking-widest opacity-60">GÓI GIA HẠN:</span>
-                      <span className="text-white font-black text-sm italic tracking-tight">{renewDuration}</span>
+                      <span className="text-white font-black text-sm italic tracking-tight">{pricingConfig[renewDurationKey as keyof typeof pricingConfig].label}</span>
                    </div>
                    <div className="text-right">
                       <span className="text-slate-500 text-[9px] font-black uppercase tracking-widest opacity-60">TỔNG CHI PHÍ:</span>
                       <p className="text-xl md:text-2xl font-black text-[#f97316] italic tracking-tighter">
-                        {(pricingConfig[renewDuration as keyof typeof pricingConfig].pricePerUnit * selectedIds.size).toLocaleString()}đ
+                        {(pricingConfig[renewDurationKey as keyof typeof pricingConfig].pricePerUnit * selectedIds.size).toLocaleString()}đ
                       </p>
                    </div>
                 </div>
