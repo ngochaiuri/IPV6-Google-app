@@ -14,6 +14,9 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
   const [balance, setBalance] = useState<number>(0);
   const [isLoadingProxies, setIsLoadingProxies] = useState(true);
   const [isOrdering, setIsOrdering] = useState(false);
+  const [isRenewing, setIsRenewing] = useState(false);
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [renewDuration, setRenewDuration] = useState('1 Tháng');
   const [proxies, setProxies] = useState<ProxyInstance[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [token] = useState(localStorage.getItem('api_token') || '');
@@ -136,6 +139,57 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
         alert(result.message || "Thất bại.");
       }
     } catch (err) { alert("Lỗi kết nối."); } finally { setIsOrdering(false); }
+  };
+
+  const handleRenewProxies = async () => {
+    const targets = proxies.filter(p => selectedIds.has(p.id));
+    if (targets.length === 0) {
+      alert("Vui lòng chọn proxy cần gia hạn.");
+      return;
+    }
+
+    const renewCost = pricingConfig[renewDuration as keyof typeof pricingConfig].pricePerUnit * targets.length;
+    if (balance < renewCost) {
+      alert("Số dư không đủ để gia hạn. Vui lòng nạp thêm tiền.");
+      return;
+    }
+
+    setIsRenewing(true);
+    try {
+      const selectedStrings = targets.map(p => `${p.ip}:${p.port}:${p.username}:${p.password}`);
+      const payload = {
+        tenkhach: userPhone,
+        selected: selectedStrings,
+        dulieune: renewDuration
+      };
+
+      const response = await fetch("https://proxynuoinick.com/api/api/tasks/giahanproxy", {
+        method: "POST",
+        headers: { 
+          "accept": "*/*", 
+          "content-type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+      // Xử lý phản hồi theo JSON: { ten: "...", message: "Gia hạn thành công" }
+      if (result.message) {
+        alert(result.message);
+        if (result.message.toLowerCase().includes("thành công")) {
+          setShowRenewModal(false);
+          fetchBalance();
+          fetchProxies();
+        }
+      } else {
+        alert("Có lỗi xảy ra trong quá trình gia hạn.");
+      }
+    } catch (err) {
+      alert("Lỗi kết nối khi gia hạn.");
+    } finally {
+      setIsRenewing(false);
+    }
   };
 
   const getTargetProxies = () => selectedIds.size > 0 ? proxies.filter(p => selectedIds.has(p.id)) : proxies;
@@ -307,13 +361,29 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                     {t.proxyList}
                   </h2>
                   
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button 
                       onClick={fetchProxies}
                       className="p-2 md:p-3 rounded-xl bg-[#070b14] border border-slate-800 text-slate-500 hover:text-[#f97316] transition-all"
                     >
                       <svg className={`w-4 h-4 md:w-5 h-5 ${isLoadingProxies ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     </button>
+                    
+                    {/* GIA HẠN Proxy Button - CAM ĐEN */}
+                    <button 
+                      onClick={() => {
+                        if (selectedIds.size === 0) {
+                           alert("Vui lòng chọn ít nhất 1 proxy để gia hạn.");
+                        } else {
+                           setShowRenewModal(true);
+                        }
+                      }}
+                      className={`flex-grow sm:flex-grow-0 bg-[#f97316]/10 hover:bg-[#f97316] text-[#f97316] hover:text-white text-[9px] md:text-[11px] font-black py-2.5 md:py-3 px-4 md:px-6 rounded-xl md:rounded-2xl uppercase flex items-center justify-center space-x-2 transition-all border border-[#f97316]/20 shadow-inner group active:scale-95`}
+                    >
+                      <svg className="w-3.5 h-3.5 md:w-4 h-4 text-[#f97316] group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 2m9-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <span className="whitespace-nowrap italic tracking-tighter">GIA HẠN PROXY {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</span>
+                    </button>
+
                     <button 
                       onClick={handleCopyProxies}
                       className="flex-grow sm:flex-grow-0 bg-[#070b14] hover:bg-[#f97316]/5 text-slate-400 hover:text-white text-[9px] md:text-[11px] font-black py-2.5 md:py-3 px-4 md:px-6 rounded-xl md:rounded-2xl uppercase flex items-center justify-center space-x-2 transition-all border border-slate-800 shadow-inner"
@@ -331,7 +401,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                   </div>
                 </div>
 
-                {/* Table Container with proper Scroll */}
+                {/* Table Content */}
                 <div className="overflow-x-auto flex-grow custom-scrollbar w-full">
                   {isLoadingProxies ? (
                     <div className="flex flex-col items-center justify-center h-[300px] md:h-[500px] space-y-4">
@@ -361,7 +431,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/10">
-                        {paginatedProxies.length > 0 ? paginatedProxies.map((p, i) => (
+                        {paginatedProxies.length > 0 ? paginatedProxies.map((p) => (
                           <tr key={p.id} className={`hover:bg-[#f97316]/5 transition-all group ${selectedIds.has(p.id) ? 'bg-[#f97316]/5' : ''}`}>
                             <td className="px-4 md:px-8 py-4 md:py-6 text-center">
                               <label className="relative flex items-center justify-center cursor-pointer mx-auto">
@@ -382,7 +452,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                             <td className="px-4 md:px-8 py-4 md:py-6 text-center">
                               <div className="flex flex-col">
                                 <span className="text-white text-[10px] md:text-xs font-black tracking-tight">{p.username}</span>
-                                <span className="text-[9px] md:text-[10px] text-slate-600 font-mono tracking-tighter uppercase">{p.password.substring(0, 3)}****</span>
+                                <span className="text-[9px] md:text-[10px] text-slate-600 font-mono tracking-tighter uppercase">{p.password?.substring(0, 3)}****</span>
                               </div>
                             </td>
                             <td className="px-4 md:px-8 py-4 md:py-6 text-center">
@@ -416,65 +486,25 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                   )}
                 </div>
 
-                {/* Pagination Controls - Mobile Optimized */}
+                {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="p-4 md:p-6 border-t border-slate-800/40 bg-[#070b14]/30 flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest">
                       <span className="hidden sm:inline">Hiển thị</span> <span className="text-white">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, proxies.length)}</span> / <span className="text-white">{proxies.length}</span>
                     </div>
-                    
                     <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="p-2 rounded-lg md:rounded-xl border border-slate-800 text-slate-500 disabled:opacity-20 transition-all"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
-                      </button>
-
-                      <div className="flex items-center space-x-1">
-                        {[...Array(totalPages)].map((_, i) => {
-                          const page = i + 1;
-                          if (totalPages > 5) {
-                            if (page !== 1 && page !== totalPages && (page < currentPage - 1 || page > currentPage + 1)) {
-                              if (page === currentPage - 2 || page === currentPage + 2) return <span key={page} className="text-slate-700 px-0.5 font-black">.</span>;
-                              return null;
-                            }
-                          }
-                          return (
-                            <button
-                              key={page}
-                              onClick={() => setCurrentPage(page)}
-                              className={`w-8 h-8 md:w-9 md:h-9 rounded-lg md:rounded-xl font-black text-[10px] md:text-xs transition-all ${currentPage === page ? 'bg-[#f97316] text-white shadow-lg shadow-orange-900/30' : 'text-slate-500 hover:bg-slate-800/50'}`}
-                            >
-                              {page}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <button 
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="p-2 rounded-lg md:rounded-xl border border-slate-800 text-slate-500 disabled:opacity-20 transition-all"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
-                      </button>
+                       <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg border border-slate-800 disabled:opacity-20"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg></button>
+                       <span className="text-white font-black text-xs px-4">{currentPage} / {totalPages}</span>
+                       <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg border border-slate-800 disabled:opacity-20"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg></button>
                     </div>
                   </div>
                 )}
-
-                <div className="p-3 md:p-5 bg-[#070b14]/50 border-t border-slate-800/40 text-center">
-                  <span className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-widest opacity-50">
-                    {proxies.length} PROXY ĐANG HOẠT ĐỘNG
-                  </span>
-                </div>
               </div>
             </div>
           </div>
         ) : (
           <div className="bg-[#111827] border border-slate-800/60 rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-12 shadow-2xl relative overflow-hidden">
-            <div className="max-w-4xl relative z-10">
+             <div className="max-w-4xl relative z-10">
               <h2 className="text-xl md:text-2xl font-black text-white italic uppercase mb-4 flex items-center tracking-tighter">
                 <span className="w-1.5 h-7 bg-[#f97316] mr-3 rounded-full"></span>
                 {t.apiTitle}
@@ -503,43 +533,21 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
 
                 {/* API Documentation */}
                 <div className="space-y-8">
-                  {/* API 1: Lấy danh sách */}
+                  {/* API Gia hạn proxy */}
                   <div className="bg-[#070b14]/80 p-6 md:p-10 rounded-2xl md:rounded-[2rem] border border-slate-800/60">
                     <h4 className="text-[#f97316] font-black uppercase text-[10px] md:text-[11px] mb-6 flex items-center tracking-widest">
-                      <svg className="w-4 h-4 md:w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                      01. API LẤY DANH SÁCH PROXY
-                    </h4>
-                    <div className="space-y-4">
-                      <div className="flex flex-col space-y-2">
-                        <span className="opacity-60 text-[9px] md:text-[11px] font-black uppercase text-slate-400">Endpoint & Method:</span>
-                        <code className="text-[#f97316] font-mono text-[9px] md:text-[11px] bg-[#f97316]/5 px-3 py-3 rounded-lg border border-[#f97316]/20 break-all font-bold">
-                          GET https://proxynuoinick.com/api/api/tasks/proxy?tenkhach={userPhone}
-                        </code>
-                      </div>
-                      <div className="flex flex-col space-y-2">
-                        <span className="opacity-60 text-[9px] md:text-[11px] font-black uppercase text-slate-400">Header:</span>
-                        <code className="text-blue-400 font-mono text-[9px] md:text-[11px] bg-blue-400/5 px-3 py-3 rounded-lg border border-blue-400/20 font-bold">
-                          Authorization: Bearer [TOKEN]
-                        </code>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* API 2: Đặt mua proxy */}
-                  <div className="bg-[#070b14]/80 p-6 md:p-10 rounded-2xl md:rounded-[2rem] border border-slate-800/60">
-                    <h4 className="text-[#f97316] font-black uppercase text-[10px] md:text-[11px] mb-6 flex items-center tracking-widest">
-                      <svg className="w-4 h-4 md:w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                      02. API ĐẶT MUA PROXY MỚI
+                      <svg className="w-4 h-4 md:w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 2m9-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      03. API GIA HẠN PROXY
                     </h4>
                     <div className="space-y-6">
                       <div className="flex flex-col space-y-2">
                         <span className="opacity-60 text-[9px] md:text-[11px] font-black uppercase text-slate-400">Endpoint & Method:</span>
                         <code className="text-[#f97316] font-mono text-[9px] md:text-[11px] bg-[#f97316]/5 px-3 py-3 rounded-lg border border-[#f97316]/20 break-all font-bold">
-                          POST https://proxynuoinick.com/api/api/tasks/start
+                          POST https://proxynuoinick.com/api/api/tasks/giahanproxy
                         </code>
                       </div>
                       <div className="flex flex-col space-y-2">
-                        <span className="opacity-60 text-[9px] md:text-[11px] font-black uppercase text-slate-400">Header:</span>
+                        <span className="opacity-60 text-[9px] md:text-[11px] font-black uppercase text-slate-400">Headers:</span>
                         <code className="text-blue-400 font-mono text-[9px] md:text-[11px] bg-blue-400/5 px-3 py-3 rounded-lg border border-blue-400/20 font-bold">
                           Content-Type: application/json<br/>
                           Authorization: Bearer [TOKEN]
@@ -549,14 +557,12 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                         <span className="opacity-60 text-[9px] md:text-[11px] font-black uppercase text-slate-400">JSON Body Payload:</span>
                         <pre className="text-slate-300 font-mono text-[9px] md:text-[11px] bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto">
 {`{
-  "userId": "${userPhone}",
-  "numProxy": 1,
-  "passwordproxy": "mật_khẩu_proxy",
-  "usernameproxy": "tài_khoản_proxy",
-  "tinhtrangproxy": "Không xoay",
-  "thoigianxoay": 0,
-  "soNgay": 30,
-  "tenKhach": "${userPhone}"
+  "tenkhach": "${userPhone}",
+  "selected": [
+    "ip:port:user:pass",
+    "ip:port:user:pass"
+  ],
+  "dulieune": "1 Tháng"
 }`}
                         </pre>
                       </div>
@@ -568,6 +574,75 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
           </div>
         )}
       </div>
+
+      {/* RENEW MODAL - CAM ĐEN ĐỒNG BỘ */}
+      {showRenewModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#111827] border border-slate-800 w-full max-w-md rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden animate-in zoom-in duration-300">
+            {/* Cam Glow Ambient */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#f97316]/5 blur-[60px] rounded-full"></div>
+            
+            <div className="relative z-10">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-xl md:text-2xl font-black text-white italic uppercase tracking-tighter">Gia hạn Proxy</h3>
+                <button onClick={() => setShowRenewModal(false)} className="text-slate-500 hover:text-white transition-colors p-2">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              <div className="bg-[#070b14] p-5 rounded-2xl border border-slate-800/50 mb-8">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-[#f97316]/20 rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4 text-[#f97316]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                    <span className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest pl-1">ĐANG CHỌN:</span>
+                  </div>
+                  <span className="text-white font-black text-sm italic tracking-widest">{selectedIds.size} PROXY</span>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 block pl-1 opacity-70">Thời gian gia hạn</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {['1 Tháng', '3 Tháng', '6 Tháng', '12 Tháng'].map((duration) => (
+                      <button 
+                        key={duration}
+                        onClick={() => setRenewDuration(duration)}
+                        className={`py-4 rounded-xl md:rounded-2xl font-black text-[11px] md:text-xs uppercase tracking-widest transition-all border ${renewDuration === duration ? 'bg-[#f97316] border-[#f97316] text-white shadow-lg shadow-orange-900/40' : 'bg-[#070b14] border-slate-800 text-slate-500 hover:border-[#f97316]/50 hover:text-[#f97316]'}`}
+                      >
+                        {duration}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-slate-800/50 flex justify-between items-center">
+                   <div className="flex flex-col">
+                      <span className="text-slate-500 text-[9px] font-black uppercase tracking-widest opacity-60">GÓI GIA HẠN:</span>
+                      <span className="text-white font-black text-sm italic tracking-tight">{renewDuration}</span>
+                   </div>
+                   <div className="text-right">
+                      <span className="text-slate-500 text-[9px] font-black uppercase tracking-widest opacity-60">TỔNG CHI PHÍ:</span>
+                      <p className="text-xl md:text-2xl font-black text-[#f97316] italic tracking-tighter">
+                        {(pricingConfig[renewDuration as keyof typeof pricingConfig].pricePerUnit * selectedIds.size).toLocaleString()}đ
+                      </p>
+                   </div>
+                </div>
+
+                <button 
+                  onClick={handleRenewProxies}
+                  disabled={isRenewing}
+                  className="w-full bg-[#f97316] hover:bg-orange-600 text-white font-black py-4 md:py-5 rounded-2xl text-[13px] uppercase tracking-widest shadow-2xl shadow-orange-900/40 transition-all transform active:scale-[0.97] disabled:opacity-50 mt-4 italic"
+                >
+                  {isRenewing ? 'HỆ THỐNG ĐANG XỬ LÝ...' : 'XÁC NHẬN GIA HẠN NGAY'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
