@@ -61,7 +61,8 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
           expiredAt: item.ngayHeThan || '...',
           status: 'active'
         }));
-        setProxies(mappedProxies);
+        // Đảo ngược mảng để cái mới nhất lên đầu
+        setProxies(mappedProxies.reverse());
       }
     } catch (e) { 
       console.error(e); 
@@ -113,6 +114,10 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
   const handleOrderProxy = async () => {
     if (!token) { alert("Phiên đăng nhập hết hạn."); return; }
     if (balance < totalPrice) { alert("Số dư không đủ."); return; }
+    
+    // Thông báo cho khách hàng về quy trình tạo proxy thực
+    alert("Proxy chúng tôi tạo mới theo thời gian thực 100% không dùng lại, vì vậy có thể phải đợi hơi lâu trong lúc đang setup cho ra proxy.");
+    
     setIsOrdering(true);
     try {
       const payload = {
@@ -174,7 +179,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       });
 
       const result = await response.json();
-      // Xử lý phản hồi theo JSON: { ten: "...", message: "Gia hạn thành công" }
       if (result.message) {
         alert(result.message);
         if (result.message.toLowerCase().includes("thành công")) {
