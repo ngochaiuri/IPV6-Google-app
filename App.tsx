@@ -12,28 +12,43 @@ import Register from './components/Register';
 import Affiliate from './components/Affiliate';
 import Dashboard from './components/Dashboard';
 import CTAHome from './components/CTAHome';
+import GmailVerify from './components/GmailVerify';
 import { Tutorials, Contact, Terms } from './components/SupportPages';
-import { Language } from './types';
+import { Language, AppTab } from './types';
 import { translations } from './translations';
-
-export type AppTab = 'home' | 'pricing' | 'support' | 'login' | 'register' | 'tutorials' | 'contact' | 'terms' | 'affiliate' | 'dashboard';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('home');
   const [lang, setLang] = useState<Language>('vi');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userPhone, setUserPhone] = useState<string>(localStorage.getItem('user_phone') || '');
 
   const t = translations[lang];
 
+  const checkGmailStatus = async (phone: string) => {
+    try {
+      const response = await fetch(`https://proxynuoinick.com/api/api/tasks/CheckDuLieuGmail?tenkhach=${phone}`);
+      const data = await response.json();
+      
+      // Based on provided API info: {"ten":"0813149998","mess":"Đã có gmail"}
+      if (data && data.mess && data.mess.includes("Đã có gmail")) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error("Gmail check error:", e);
+      return false;
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
-    if (token) {
+    const phone = localStorage.getItem('user_phone');
+    if (token && phone) {
       setIsLoggedIn(true);
-      if (activeTab === 'login' || activeTab === 'register') {
-        setActiveTab('dashboard');
-      }
+      setUserPhone(phone);
     }
-  }, [activeTab]);
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -43,20 +58,31 @@ const App: React.FC = () => {
     setActiveTab(tab);
   };
 
-  const handleLoginSuccess = (token: string) => {
+  const handleLoginSuccess = async (token: string) => {
+    const phone = localStorage.getItem('user_phone') || '';
+    setUserPhone(phone);
     localStorage.setItem('auth_token', token);
     setIsLoggedIn(true);
-    setActiveTab('dashboard');
+    
+    // Crucial: Check Gmail right after login
+    const isVerified = await checkGmailStatus(phone);
+    if (isVerified) {
+      setActiveTab('dashboard');
+    } else {
+      setActiveTab('gmail-verify');
+    }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user_phone');
+    localStorage.removeItem('api_token');
     setIsLoggedIn(false);
+    setUserPhone('');
     setActiveTab('home');
   };
 
-  const showHeaderFooter = activeTab !== 'login' && activeTab !== 'register';
+  const showHeaderFooter = activeTab !== 'login' && activeTab !== 'register' && activeTab !== 'gmail-verify';
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 selection:bg-orange-500/30">
@@ -84,6 +110,14 @@ const App: React.FC = () => {
         )}
         {activeTab === 'dashboard' && (
           <Dashboard t={t.dashboard} onLogout={handleLogout} />
+        )}
+        {activeTab === 'gmail-verify' && (
+          <GmailVerify 
+            t={t.gmailVerify} 
+            userPhone={userPhone} 
+            onSuccess={() => setActiveTab('dashboard')} 
+            onLogout={handleLogout}
+          />
         )}
         {activeTab === 'pricing' && (
           <div className="pt-24 pb-12">
@@ -123,7 +157,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {activeTab !== 'dashboard' && <ProxyAdvisor lang={lang} />}
+      {activeTab !== 'dashboard' && activeTab !== 'gmail-verify' && <ProxyAdvisor lang={lang} />}
       
       {showHeaderFooter && (
         <Footer t={t.footer} onNavigate={handleNavigate} />

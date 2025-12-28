@@ -33,3 +33,5 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
+
+export type AppTab = 'home' | 'pricing' | 'support' | 'login' | 'register' | 'tutorials' | 'contact' | 'terms' | 'affiliate' | 'dashboard' | 'gmail-verify';
