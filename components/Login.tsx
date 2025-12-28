@@ -36,12 +36,11 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLoginSuccess, t }) => {
       if (result.status === 'success') {
         setMessage({ type: 'success', text: 'Đăng nhập thành công!' });
         
-        // Hiển thị thông báo về chất lượng proxy ngay khi đăng nhập thành công
-        alert("Proxy chúng tôi tạo mới theo thời gian thực 100% không dùng lại , vì vậy có thể phải đợi 1 chút trong lúc đang setup cho ra proxy");
+        // Thay vì alert, lưu thông báo vào session để Dashboard hiển thị Popup
+        sessionStorage.setItem('login_welcome_msg', "Proxy chúng tôi tạo mới theo thời gian thực 100% không dùng lại, vì vậy có thể phải đợi 1 chút trong lúc đang setup cho ra proxy.");
 
         localStorage.setItem('user_phone', phoneNumber);
 
-        // Tách token từ chuỗi message phức tạp: "Login successful ... token: <JWT>"
         let token = "";
         const msg = result.message || "";
         if (msg.includes("token:")) {
@@ -51,7 +50,6 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLoginSuccess, t }) => {
         }
         
         localStorage.setItem('api_token', token);
-        // Lưu cả auth_token để App.tsx nhận diện trạng thái login
         localStorage.setItem('auth_token', token);
         
         setTimeout(() => onLoginSuccess(token), 800);
