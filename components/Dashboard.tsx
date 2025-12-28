@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ProxyInstance } from '../types';
 
 interface DashboardProps {
@@ -28,6 +28,17 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     password: userPhone  
   });
 
+  // Cấu hình giá dựa trên logic người dùng cung cấp
+  const pricingConfig = useMemo(() => ({
+    '1 Tháng': { pricePerUnit: 1000, days: 30, label: "1000 VND / 1 Proxy ( khuyến mãi 20% )" },
+    '3 Tháng': { pricePerUnit: 2400, days: 90, label: "800 VND / 1 Proxy ( khuyến mãi 30% )" },
+    '6 Tháng': { pricePerUnit: 3600, days: 180, label: "600 VND / 1 Proxy ( khuyến mãi 40% )" },
+    '12 Tháng': { pricePerUnit: 6000, days: 360, label: "500 VND / 1 Proxy ( khuyến mãi 50% )" },
+  }), []);
+
+  const currentPricing = pricingConfig[form.duration as keyof typeof pricingConfig] || pricingConfig['1 Tháng'];
+  const totalPrice = currentPricing.pricePerUnit * form.quantity;
+
   const fetchProxies = useCallback(async () => {
     if (!userPhone) return;
     setIsLoadingProxies(true);
@@ -52,7 +63,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     }
     finally { 
       setIsLoadingProxies(false); 
-      setSelectedIds(new Set()); // Reset selection on refresh
+      setSelectedIds(new Set()); 
     }
   }, [userPhone]);
 
@@ -69,7 +80,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     fetchProxies();
   }, [fetchBalance, fetchProxies]);
 
-  // Logic Chọn Tất Cả
   const handleSelectAll = () => {
     if (selectedIds.size === proxies.length && proxies.length > 0) {
       setSelectedIds(new Set());
@@ -78,7 +88,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     }
   };
 
-  // Logic Chọn Từng Dòng
   const handleToggleProxy = (id: string) => {
     const next = new Set(selectedIds);
     if (next.has(id)) {
@@ -95,12 +104,13 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       return;
     }
 
+    if (balance < totalPrice) {
+      alert("Số dư không đủ để thực hiện giao dịch này.");
+      return;
+    }
+
     setIsOrdering(true);
     try {
-      let soNgay = 30;
-      if (form.duration === '3 Tháng') soNgay = 90;
-      if (form.duration === '1 Năm') soNgay = 365;
-
       const payload = {
         userId: userPhone,
         numProxy: form.quantity,
@@ -108,7 +118,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
         usernameproxy: form.username,
         tinhtrangproxy: "Không xoay",
         thoigianxoay: 0,
-        soNgay: soNgay,
+        soNgay: currentPricing.days,
         tenKhach: userPhone
       };
 
@@ -262,16 +272,19 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                     <select 
                       value={form.duration}
                       onChange={e => setForm({...form, duration: e.target.value})}
-                      className="w-full bg-[#070b14] border border-slate-800 text-white rounded-2xl p-4 text-sm font-bold outline-none focus:border-[#f97316] appearance-none"
+                      className="w-full bg-[#070b14] border border-slate-800 text-white rounded-2xl p-4 text-sm font-bold outline-none focus:border-[#f97316] appearance-none cursor-pointer"
                     >
-                      <option>1 Tháng</option>
-                      <option>3 Tháng</option>
-                      <option>1 Năm</option>
+                      <option value="1 Tháng">1 Tháng</option>
+                      <option value="3 Tháng">3 Tháng</option>
+                      <option value="6 Tháng">6 Tháng</option>
+                      <option value="12 Tháng">12 Tháng</option>
                     </select>
                   </div>
 
-                  <div className="bg-[#f97316]/5 border border-[#f97316]/20 p-4 rounded-2xl text-center">
-                    <span className="text-[#f97316] font-black text-[11px] uppercase tracking-tighter">{t.promoLabel}</span>
+                  <div className="bg-[#f97316]/10 border border-[#f97316]/30 p-4 rounded-2xl text-center shadow-lg shadow-orange-900/10">
+                    <span className="text-[#f97316] font-black text-[11px] uppercase tracking-tighter leading-tight block">
+                      {currentPricing.label}
+                    </span>
                   </div>
 
                   <div>
@@ -287,7 +300,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
 
                   <div className="pt-6 border-t border-slate-800/50 flex justify-between items-center">
                     <span className="text-slate-400 text-xs font-black uppercase tracking-widest">{t.totalPrice}:</span>
-                    <span className="text-2xl font-black text-[#f97316] italic tracking-tight">{(1000 * form.quantity).toLocaleString()} VND</span>
+                    <span className="text-2xl font-black text-[#f97316] italic tracking-tight">{totalPrice.toLocaleString()} VND</span>
                   </div>
 
                   <button 
