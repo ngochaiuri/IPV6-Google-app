@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ProxyInstance } from '../types';
 
@@ -115,14 +114,22 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
         const reversedProxies = [...mappedProxies].reverse();
         
         if (prevProxyIdsRef.current.size > 0) {
-          const currentIds = new Set(mappedProxies.map((p: any) => p.id?.toString()));
-          const addedIds = Array.from(currentIds).filter(id => id && !prevProxyIdsRef.current.has(id));
+          // Fix: Explicitly type Set<string> and filter out invalid IDs to avoid 'unknown' and assignment errors
+          const currentIdsList = mappedProxies
+            .map((p: any) => p.id?.toString())
+            .filter((id: any): id is string => !!id);
+          const currentIds = new Set<string>(currentIdsList);
+          
+          const addedIds = Array.from(currentIds).filter(id => !prevProxyIdsRef.current.has(id));
           if (addedIds.length > 0) {
-            setNewlyCreatedIds(prev => new Set([...Array.from(prev), ...addedIds]));
+            setNewlyCreatedIds(prev => new Set<string>([...Array.from(prev), ...addedIds]));
           }
         }
         
-        prevProxyIdsRef.current = new Set(mappedProxies.map((p: any) => p.id?.toString()));
+        // Fix: Explicitly type prevProxyIdsRef update as Set<string>
+        prevProxyIdsRef.current = new Set<string>(
+          mappedProxies.map((p: any) => p.id?.toString()).filter((id: any): id is string => !!id)
+        );
         setProxies(reversedProxies);
       }
     } catch (e) { console.error(e); }
