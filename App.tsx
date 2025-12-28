@@ -29,19 +29,18 @@ const App: React.FC = () => {
     const token = localStorage.getItem('auth_token');
     if (token) {
       setIsLoggedIn(true);
-      // Nếu đã login mà đang ở trang login/reg thì đẩy vào dashboard
-      if (activeTab === 'login' || activeTab === 'register' || activeTab === 'home') {
+      if (activeTab === 'login' || activeTab === 'register') {
         setActiveTab('dashboard');
       }
     }
-  }, []);
+  }, [activeTab]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeTab]);
 
-  const handleNavigate = (tab: any) => {
-    setActiveTab(tab as AppTab);
+  const handleNavigate = (tab: AppTab) => {
+    setActiveTab(tab);
   };
 
   const handleLoginSuccess = (token: string) => {
@@ -52,6 +51,7 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_phone');
     setIsLoggedIn(false);
     setActiveTab('home');
   };
@@ -59,7 +59,7 @@ const App: React.FC = () => {
   const showHeaderFooter = activeTab !== 'login' && activeTab !== 'register';
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950">
+    <div className="min-h-screen flex flex-col bg-slate-950 selection:bg-orange-500/30">
       {showHeaderFooter && (
         <Header 
           onNavigate={handleNavigate} 
