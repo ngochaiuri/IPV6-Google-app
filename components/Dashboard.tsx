@@ -474,14 +474,15 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
           </div>
         ) : (
           <div className="bg-[#111827] border border-slate-800/60 rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-12 shadow-2xl relative overflow-hidden">
-            <div className="max-w-3xl relative z-10">
+            <div className="max-w-4xl relative z-10">
               <h2 className="text-xl md:text-2xl font-black text-white italic uppercase mb-4 flex items-center tracking-tighter">
                 <span className="w-1.5 h-7 bg-[#f97316] mr-3 rounded-full"></span>
                 {t.apiTitle}
               </h2>
               <p className="text-slate-500 mb-8 md:mb-12 leading-relaxed text-sm font-medium opacity-80">{t.apiSub}</p>
               
-              <div className="space-y-8 md:space-y-10">
+              <div className="space-y-12">
+                {/* API Token Section */}
                 <div>
                   <label className="text-[10px] md:text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 block opacity-60">{t.apiTokenLabel}</label>
                   <div className="flex flex-col sm:flex-row bg-[#070b14] border border-slate-800 rounded-xl md:rounded-2xl p-2 gap-2">
@@ -500,20 +501,67 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                   </div>
                 </div>
 
-                <div className="bg-[#070b14]/80 p-6 md:p-10 rounded-2xl md:rounded-[2rem] border border-slate-800/60">
-                  <h4 className="text-[#f97316] font-black uppercase text-[10px] md:text-[11px] mb-4 md:mb-6 flex items-center tracking-widest">
-                    <svg className="w-4 h-4 md:w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    {t.apiGuide}
-                  </h4>
-                  <ul className="text-slate-500 text-xs md:text-[13px] space-y-4 md:space-y-6 font-medium">
-                    <li className="flex items-start">
-                      <span className="text-[#f97316] mr-3 md:mr-4 font-black">01.</span>
-                      <div className="flex flex-col space-y-1 md:space-y-2 overflow-hidden">
-                        <span className="opacity-60 text-[9px] md:text-[11px] font-black uppercase">Endpoint:</span>
-                        <code className="text-[#f97316] font-mono text-[9px] md:text-[11px] bg-[#f97316]/5 px-2 md:px-3 py-2 rounded-lg border border-[#f97316]/10 break-all">{`GET tasks/proxy?tenkhach=${userPhone}`}</code>
+                {/* API Documentation */}
+                <div className="space-y-8">
+                  {/* API 1: Lấy danh sách */}
+                  <div className="bg-[#070b14]/80 p-6 md:p-10 rounded-2xl md:rounded-[2rem] border border-slate-800/60">
+                    <h4 className="text-[#f97316] font-black uppercase text-[10px] md:text-[11px] mb-6 flex items-center tracking-widest">
+                      <svg className="w-4 h-4 md:w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      01. API LẤY DANH SÁCH PROXY
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex flex-col space-y-2">
+                        <span className="opacity-60 text-[9px] md:text-[11px] font-black uppercase text-slate-400">Endpoint & Method:</span>
+                        <code className="text-[#f97316] font-mono text-[9px] md:text-[11px] bg-[#f97316]/5 px-3 py-3 rounded-lg border border-[#f97316]/20 break-all font-bold">
+                          GET https://proxynuoinick.com/api/api/tasks/proxy?tenkhach={userPhone}
+                        </code>
                       </div>
-                    </li>
-                  </ul>
+                      <div className="flex flex-col space-y-2">
+                        <span className="opacity-60 text-[9px] md:text-[11px] font-black uppercase text-slate-400">Header:</span>
+                        <code className="text-blue-400 font-mono text-[9px] md:text-[11px] bg-blue-400/5 px-3 py-3 rounded-lg border border-blue-400/20 font-bold">
+                          Authorization: Bearer [TOKEN]
+                        </code>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* API 2: Đặt mua proxy */}
+                  <div className="bg-[#070b14]/80 p-6 md:p-10 rounded-2xl md:rounded-[2rem] border border-slate-800/60">
+                    <h4 className="text-[#f97316] font-black uppercase text-[10px] md:text-[11px] mb-6 flex items-center tracking-widest">
+                      <svg className="w-4 h-4 md:w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      02. API ĐẶT MUA PROXY MỚI
+                    </h4>
+                    <div className="space-y-6">
+                      <div className="flex flex-col space-y-2">
+                        <span className="opacity-60 text-[9px] md:text-[11px] font-black uppercase text-slate-400">Endpoint & Method:</span>
+                        <code className="text-[#f97316] font-mono text-[9px] md:text-[11px] bg-[#f97316]/5 px-3 py-3 rounded-lg border border-[#f97316]/20 break-all font-bold">
+                          POST https://proxynuoinick.com/api/api/tasks/start
+                        </code>
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        <span className="opacity-60 text-[9px] md:text-[11px] font-black uppercase text-slate-400">Header:</span>
+                        <code className="text-blue-400 font-mono text-[9px] md:text-[11px] bg-blue-400/5 px-3 py-3 rounded-lg border border-blue-400/20 font-bold">
+                          Content-Type: application/json<br/>
+                          Authorization: Bearer [TOKEN]
+                        </code>
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        <span className="opacity-60 text-[9px] md:text-[11px] font-black uppercase text-slate-400">JSON Body Payload:</span>
+                        <pre className="text-slate-300 font-mono text-[9px] md:text-[11px] bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto">
+{`{
+  "userId": "${userPhone}",
+  "numProxy": 1,
+  "passwordproxy": "mật_khẩu_proxy",
+  "usernameproxy": "tài_khoản_proxy",
+  "tinhtrangproxy": "Không xoay",
+  "thoigianxoay": 0,
+  "soNgay": 30,
+  "tenKhach": "${userPhone}"
+}`}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
