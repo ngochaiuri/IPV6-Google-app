@@ -35,6 +35,10 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLoginSuccess, t }) => {
       
       if (result.status === 'success') {
         setMessage({ type: 'success', text: 'Đăng nhập thành công!' });
+        
+        // Hiển thị thông báo về chất lượng proxy ngay khi đăng nhập thành công
+        alert("Proxy chúng tôi tạo mới theo thời gian thực 100% không dùng lại , vì vậy có thể phải đợi 1 chút trong lúc đang setup cho ra proxy");
+
         localStorage.setItem('user_phone', phoneNumber);
 
         // Tách token từ chuỗi message phức tạp: "Login successful ... token: <JWT>"

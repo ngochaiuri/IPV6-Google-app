@@ -15,6 +15,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
   const [isLoadingProxies, setIsLoadingProxies] = useState(true);
   const [isOrdering, setIsOrdering] = useState(false);
   const [isRenewing, setIsRenewing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [renewDuration, setRenewDuration] = useState('1 Tháng');
   const [proxies, setProxies] = useState<ProxyInstance[]>([]);
@@ -61,7 +62,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
           expiredAt: item.ngayHeThan || '...',
           status: 'active'
         }));
-        // Đảo ngược mảng để cái mới nhất lên đầu
+        // Đảo ngược mảng để proxy mới nhất hiển thị lên đầu trang
         setProxies(mappedProxies.reverse());
       }
     } catch (e) { 
@@ -115,9 +116,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     if (!token) { alert("Phiên đăng nhập hết hạn."); return; }
     if (balance < totalPrice) { alert("Số dư không đủ."); return; }
     
-    // Thông báo cho khách hàng về quy trình tạo proxy thực
-    alert("Proxy chúng tôi tạo mới theo thời gian thực 100% không dùng lại, vì vậy có thể phải đợi hơi lâu trong lúc đang setup cho ra proxy.");
-    
     setIsOrdering(true);
     try {
       const payload = {
@@ -148,6 +146,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
 
   const handleRenewProxies = async () => {
     const targets = proxies.filter(p => selectedIds.has(p.id));
+    
     if (targets.length === 0) {
       alert("Vui lòng chọn proxy cần gia hạn.");
       return;
@@ -193,6 +192,52 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       alert("Lỗi kết nối khi gia hạn.");
     } finally {
       setIsRenewing(false);
+    }
+  };
+
+  const handleDeleteProxy = async (proxy: ProxyInstance) => {
+    if (!window.confirm(t.confirmDelete)) return;
+    
+    setIsDeleting(true);
+    try {
+      const fullProxy = encodeURIComponent(`${proxy.ip}:${proxy.port}:${proxy.username}:${proxy.password}`);
+      const url = `https://proxynuoinick.com/api/api/tasks/xoaproxy?tenkhach=${userPhone}&fullproxy=${fullProxy}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'accept': '*/*' }
+      });
+      
+      const result = await response.json();
+      alert(result.message || "Đã xử lý xóa.");
+      fetchProxies();
+    } catch (err) {
+      alert("Lỗi kết nối khi xóa proxy.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const targets = proxies.filter(p => selectedIds.has(p.id));
+    if (targets.length === 0) return;
+    
+    if (!window.confirm(`Bạn có chắc muốn xóa ${targets.length} proxy đã chọn?`)) return;
+    
+    setIsDeleting(true);
+    try {
+      // Xóa tuần tự từng cái do API nhận fullproxy đơn lẻ theo query
+      for (const proxy of targets) {
+        const fullProxy = encodeURIComponent(`${proxy.ip}:${proxy.port}:${proxy.username}:${proxy.password}`);
+        const url = `https://proxynuoinick.com/api/api/tasks/xoaproxy?tenkhach=${userPhone}&fullproxy=${fullProxy}`;
+        await fetch(url, { method: 'POST', headers: { 'accept': '*/*' } });
+      }
+      alert("Hoàn tất xử lý xóa hàng loạt.");
+      fetchProxies();
+    } catch (err) {
+      alert("Lỗi trong quá trình xóa hàng loạt.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -373,7 +418,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                       <svg className={`w-4 h-4 md:w-5 h-5 ${isLoadingProxies ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     </button>
                     
-                    {/* GIA HẠN Proxy Button - CAM ĐEN */}
+                    {/* GIA HẠN Proxy Button */}
                     <button 
                       onClick={() => {
                         if (selectedIds.size === 0) {
@@ -385,8 +430,20 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                       className={`flex-grow sm:flex-grow-0 bg-[#f97316]/10 hover:bg-[#f97316] text-[#f97316] hover:text-white text-[9px] md:text-[11px] font-black py-2.5 md:py-3 px-4 md:px-6 rounded-xl md:rounded-2xl uppercase flex items-center justify-center space-x-2 transition-all border border-[#f97316]/20 shadow-inner group active:scale-95`}
                     >
                       <svg className="w-3.5 h-3.5 md:w-4 h-4 text-[#f97316] group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 2m9-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                      <span className="whitespace-nowrap italic tracking-tighter">GIA HẠN PROXY {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</span>
+                      <span className="whitespace-nowrap italic tracking-tighter">GIA HẠN {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</span>
                     </button>
+
+                    {/* XÓA HÀNG LOẠT Button */}
+                    {selectedIds.size > 0 && (
+                      <button 
+                        onClick={handleBulkDelete}
+                        disabled={isDeleting}
+                        className="flex-grow sm:flex-grow-0 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-[9px] md:text-[11px] font-black py-2.5 md:py-3 px-4 md:px-6 rounded-xl md:rounded-2xl uppercase flex items-center justify-center space-x-2 transition-all border border-red-500/20 shadow-inner group active:scale-95"
+                      >
+                        <svg className="w-3.5 h-3.5 md:w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        <span className="whitespace-nowrap italic tracking-tighter">{t.deleteSelected} ({selectedIds.size})</span>
+                      </button>
+                    )}
 
                     <button 
                       onClick={handleCopyProxies}
@@ -413,7 +470,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                       <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Đang tải...</span>
                     </div>
                   ) : (
-                    <table className="min-w-[800px] w-full text-left">
+                    <table className="min-w-[900px] w-full text-left">
                       <thead>
                         <tr className="bg-[#070b14]/50 text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-800/40">
                           <th className="px-4 md:px-8 py-4 md:py-6 w-16 text-center">
@@ -432,6 +489,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                           <th className="px-4 md:px-8 py-4 md:py-6 text-center">VỊ TRÍ</th>
                           <th className="px-4 md:px-8 py-4 md:py-6 text-center">HẾT HẠN</th>
                           <th className="px-4 md:px-8 py-4 md:py-6 text-center">TRẠNG THÁI</th>
+                          <th className="px-4 md:px-8 py-4 md:py-6 text-center">THAO TÁC</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/10">
@@ -474,10 +532,19 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                                 LIVE
                               </span>
                             </td>
+                            <td className="px-4 md:px-8 py-4 md:py-6 text-center">
+                              <button 
+                                onClick={() => handleDeleteProxy(p)}
+                                className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-90"
+                                title={t.deleteBtn}
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              </button>
+                            </td>
                           </tr>
                         )) : (
                           <tr>
-                            <td colSpan={6} className="px-8 py-20 text-center">
+                            <td colSpan={7} className="px-8 py-20 text-center">
                               <div className="flex flex-col items-center justify-center opacity-20">
                                 <svg className="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                                 <span className="font-black uppercase tracking-widest text-xs">Trống</span>
@@ -537,7 +604,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
 
                 {/* API Documentation */}
                 <div className="space-y-8">
-                  {/* API Gia hạn proxy */}
                   <div className="bg-[#070b14]/80 p-6 md:p-10 rounded-2xl md:rounded-[2rem] border border-slate-800/60">
                     <h4 className="text-[#f97316] font-black uppercase text-[10px] md:text-[11px] mb-6 flex items-center tracking-widest">
                       <svg className="w-4 h-4 md:w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 2m9-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -579,11 +645,10 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
         )}
       </div>
 
-      {/* RENEW MODAL - CAM ĐEN ĐỒNG BỘ */}
+      {/* RENEW MODAL */}
       {showRenewModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-[#111827] border border-slate-800 w-full max-w-md rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden animate-in zoom-in duration-300">
-            {/* Cam Glow Ambient */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#f97316]/5 blur-[60px] rounded-full"></div>
             
             <div className="relative z-10">

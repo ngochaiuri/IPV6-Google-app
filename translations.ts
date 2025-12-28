@@ -48,7 +48,10 @@ export const translations: Record<Language, any> = {
       apiTitle: 'Kết nối API hệ thống',
       apiSub: 'Sử dụng Token dưới đây để tích hợp Proxy vào các công cụ tự động của bạn.',
       apiTokenLabel: 'YOUR PERSONAL ACCESS TOKEN (JWT)',
-      apiGuide: 'Hướng dẫn tích hợp'
+      apiGuide: 'Hướng dẫn tích hợp',
+      deleteBtn: 'XÓA',
+      deleteSelected: 'XÓA ĐÃ CHỌN',
+      confirmDelete: 'Bạn có chắc chắn muốn xóa proxy này không?'
     },
     hero: { label: 'Tự tạo Proxy IPv6 Online', title1: 'Proxy IPv6 Dân Cư', title2: 'Nhanh Chóng & Dễ Dàng', sub: 'Băng thông không giới hạn, hỗ trợ HTTP/HTTPS/SOCKS5.', promo: 'KHUYẾN MÃI:', promoDesc: 'Tặng 10,000 VND', priceLabel: 'Chỉ 500đ', unit: '/ 1 Proxy', btnStart: 'Tạo Proxy Ngay', btnPrice: 'Bảng Giá', feat1: '100Mbps+', feat2: 'SSL/TLS', feat3: '99.9% Uptime' },
     ctaHome: { title1: 'Sẵn Sàng Tạo', title2: 'Proxy Online?', sub: 'Liên hệ để được hỗ trợ', btnStart: 'Bắt Đầu', btnContact: '0813149999', feat1: '24/7', feat2: 'An toàn', feat3: 'Hoàn tiền' },
@@ -179,7 +182,10 @@ export const translations: Record<Language, any> = {
       apiTitle: 'System API Connection',
       apiSub: 'Use the token below to integrate proxies into your tools.',
       apiTokenLabel: 'YOUR PERSONAL ACCESS TOKEN (JWT)',
-      apiGuide: 'Integration Guide'
+      apiGuide: 'Integration Guide',
+      deleteBtn: 'DELETE',
+      deleteSelected: 'DELETE SELECTED',
+      confirmDelete: 'Are you sure you want to delete this proxy?'
     },
     hero: { label: 'Create IPv6 Proxy Online', title1: 'Residential IPv6', title2: 'Fast & Easy', sub: 'Unlimited bandwidth, HTTP/HTTPS/SOCKS5 supported.', promo: 'PROMO:', promoDesc: 'Get 10,000 VND', priceLabel: 'Only 500đ', unit: '/ 1 Proxy', btnStart: 'Create Now', btnPrice: 'Pricing', feat1: '100Mbps+', feat2: 'SSL/TLS', feat3: '99.9% Uptime' },
     ctaHome: { title1: 'Ready to', title2: 'Create Online?', sub: 'Contact for support', btnStart: 'Start', btnContact: '0813149999', feat1: '24/7', feat2: 'Secure', feat3: 'Refund' },
