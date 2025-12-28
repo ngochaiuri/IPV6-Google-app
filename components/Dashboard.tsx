@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ProxyInstance } from '../types';
 
 interface DashboardProps {
@@ -20,6 +20,9 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
   const [renewDuration, setRenewDuration] = useState('1 Tháng');
   const [proxies, setProxies] = useState<ProxyInstance[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [newlyCreatedIds, setNewlyCreatedIds] = useState<Set<string>>(new Set());
+  const prevProxyIdsRef = useRef<Set<string>>(new Set());
+  
   const [token] = useState(localStorage.getItem('api_token') || '');
   const [userPhone] = useState(localStorage.getItem('user_phone') || '');
 
@@ -45,9 +48,10 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
   const currentPricing = pricingConfig[form.duration as keyof typeof pricingConfig] || pricingConfig['1 Tháng'];
   const totalPrice = currentPricing.pricePerUnit * form.quantity;
 
-  const fetchProxies = useCallback(async () => {
+  const fetchProxies = useCallback(async (isSilent = false) => {
     if (!userPhone) return;
-    setIsLoadingProxies(true);
+    if (!isSilent) setIsLoadingProxies(true);
+    
     try {
       const response = await fetch(`https://proxynuoinick.com/api/api/tasks/proxy?tenkhach=${userPhone}`, {
         headers: {
@@ -56,6 +60,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
         }
       });
       const data = await response.json();
+      
       if (data?.du_lieu_proxy) {
         const mappedProxies = data.du_lieu_proxy.map((item: any, idx: number) => ({
           id: item.id?.toString() || `p-${idx}`,
@@ -67,15 +72,30 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
           expiredAt: item.ngayHeThan || '...',
           status: 'active'
         }));
-        setProxies(mappedProxies.reverse());
+
+        const reversedProxies = [...mappedProxies].reverse();
+        
+        // Nhận diện Proxy mới tạo bằng cách so sánh với danh sách ID cũ
+        if (prevProxyIdsRef.current.size > 0) {
+          const currentIds = new Set(mappedProxies.map((p: any) => p.id?.toString()));
+          const addedIds = Array.from(currentIds).filter(id => id && !prevProxyIdsRef.current.has(id));
+          
+          if (addedIds.length > 0) {
+            setNewlyCreatedIds(prev => new Set([...Array.from(prev), ...addedIds]));
+          }
+        }
+        
+        // Cập nhật ref lưu trữ ID để so sánh lần sau
+        prevProxyIdsRef.current = new Set(mappedProxies.map((p: any) => p.id?.toString()));
+        
+        setProxies(reversedProxies);
       }
     } catch (e) { 
       console.error(e); 
     }
     finally { 
-      setIsLoadingProxies(false); 
+      if (!isSilent) setIsLoadingProxies(false); 
       setSelectedIds(new Set());
-      setCurrentPage(1);
     }
   }, [userPhone, token]);
 
@@ -148,9 +168,11 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       });
       const result = await response.json();
       if (result.status === "success") {
-        alert(`Đặt mua thành công!`);
-        fetchBalance();
-        fetchProxies();
+        // Cập nhật số dư và danh sách ngay lập tức trước khi thông báo
+        // fetchProxies sẽ tự động tìm các ID mới và đưa vào newlyCreatedIds
+        await fetchBalance();
+        await fetchProxies(true); 
+        alert(`Đặt mua thành công! Proxy mới của bạn đã được thêm vào danh sách.`);
       } else {
         alert(result.message || "Thất bại.");
       }
@@ -191,11 +213,11 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
 
       const result = await response.json();
       if (result.message) {
+        await fetchBalance();
+        await fetchProxies(true);
         alert(result.message);
         if (result.message.toLowerCase().includes("thành công")) {
           setShowRenewModal(false);
-          fetchBalance();
-          fetchProxies();
         }
       }
     } catch (err) {
@@ -227,8 +249,8 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       });
       
       const result = await response.json();
+      await fetchProxies(true);
       alert(result.message || "Đã xóa thành công.");
-      fetchProxies();
     } catch (err) {
       alert("Lỗi kết nối khi xóa proxy.");
     } finally {
@@ -261,8 +283,8 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       });
 
       const result = await response.json();
+      await fetchProxies(true);
       alert(result.message || `Đã xóa thành công ${targets.length} proxy.`);
-      fetchProxies();
     } catch (err) {
       alert("Lỗi trong quá trình xóa hàng loạt.");
     } finally {
@@ -441,13 +463,12 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                   
                   <div className="flex flex-wrap items-center gap-2">
                     <button 
-                      onClick={fetchProxies}
+                      onClick={() => fetchProxies()}
                       className="p-2 md:p-3 rounded-xl bg-[#070b14] border border-slate-800 text-slate-500 hover:text-[#f97316] transition-all"
                     >
                       <svg className={`w-4 h-4 md:w-5 h-5 ${isLoadingProxies ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     </button>
                     
-                    {/* GIA HẠN Proxy Button */}
                     <button 
                       onClick={() => {
                         if (selectedIds.size === 0) {
@@ -462,7 +483,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                       <span className="whitespace-nowrap italic tracking-tighter">GIA HẠN {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</span>
                     </button>
 
-                    {/* XÓA HÀNG LOẠT Button */}
                     {selectedIds.size > 0 && (
                       <button 
                         onClick={handleBulkDelete}
@@ -522,56 +542,66 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/10">
-                        {paginatedProxies.length > 0 ? paginatedProxies.map((p) => (
-                          <tr key={p.id} className={`hover:bg-[#f97316]/5 transition-all group ${selectedIds.has(p.id) ? 'bg-[#f97316]/5' : ''}`}>
-                            <td className="px-4 md:px-8 py-4 md:py-6 text-center">
-                              <label className="relative flex items-center justify-center cursor-pointer mx-auto">
-                                <input 
-                                  type="checkbox" 
-                                  checked={selectedIds.has(p.id)}
-                                  onChange={() => handleToggleProxy(p.id)}
-                                  className="peer appearance-none w-4 h-4 md:w-5 h-5 bg-[#070b14] border-2 border-slate-800 rounded-md checked:bg-[#f97316] checked:border-[#f97316] transition-all cursor-pointer" 
-                                />
-                                <svg className="absolute w-2.5 h-2.5 md:w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>
-                              </label>
-                            </td>
-                            <td className="px-4 md:px-8 py-4 md:py-6">
-                              <span className="text-white font-mono font-black text-xs md:text-[15px] tracking-tight group-hover:text-[#f97316] transition-colors">
-                                {p.ip}:{p.port}
-                              </span>
-                            </td>
-                            <td className="px-4 md:px-8 py-4 md:py-6 text-center">
-                              <div className="flex flex-col">
-                                <span className="text-white text-[10px] md:text-xs font-black tracking-tight">{p.username}</span>
-                                <span className="text-[9px] md:text-[10px] text-slate-600 font-mono tracking-tighter uppercase">{p.password?.substring(0, 3)}****</span>
-                              </div>
-                            </td>
-                            <td className="px-4 md:px-8 py-4 md:py-6 text-center">
-                              <span className="text-slate-500 text-[9px] font-black uppercase tracking-tighter bg-slate-800/30 px-2 md:px-3 py-1 rounded-lg">
-                                VIỆT NAM
-                              </span>
-                            </td>
-                            <td className="px-4 md:px-8 py-4 md:py-6 text-center">
-                              <span className="text-slate-500 text-[10px] md:text-[11px] font-bold italic opacity-80">
-                                {p.expiredAt}
-                              </span>
-                            </td>
-                            <td className="px-4 md:px-8 py-4 md:py-6 text-center">
-                              <span className="bg-green-500/10 text-green-500 border border-green-500/20 px-3 md:px-4 py-1 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest">
-                                LIVE
-                              </span>
-                            </td>
-                            <td className="px-4 md:px-8 py-4 md:py-6 text-center">
-                              <button 
-                                onClick={() => handleDeleteProxy(p)}
-                                className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-90"
-                                title="Xóa Proxy"
-                              >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                              </button>
-                            </td>
-                          </tr>
-                        )) : (
+                        {paginatedProxies.length > 0 ? paginatedProxies.map((p) => {
+                          const isNew = newlyCreatedIds.has(p.id);
+                          const isSelected = selectedIds.has(p.id);
+                          
+                          return (
+                            <tr key={p.id} className={`transition-all group relative border-l-4 ${isNew ? 'bg-orange-500/10 border-orange-500' : isSelected ? 'bg-[#f97316]/5 border-orange-500/40' : 'hover:bg-[#f97316]/5 border-transparent'}`}>
+                              <td className="px-4 md:px-8 py-4 md:py-6 text-center">
+                                <label className="relative flex items-center justify-center cursor-pointer mx-auto">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={isSelected}
+                                    onChange={() => handleToggleProxy(p.id)}
+                                    className="peer appearance-none w-4 h-4 md:w-5 h-5 bg-[#070b14] border-2 border-slate-800 rounded-md checked:bg-[#f97316] checked:border-[#f97316] transition-all cursor-pointer" 
+                                  />
+                                  <svg className="absolute w-2.5 h-2.5 md:w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>
+                                </label>
+                              </td>
+                              <td className="px-4 md:px-8 py-4 md:py-6">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-white font-mono font-black text-xs md:text-[15px] tracking-tight group-hover:text-[#f97316] transition-colors">
+                                    {p.ip}:{p.port}
+                                  </span>
+                                  {isNew && (
+                                    <span className="bg-orange-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">NEW</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 md:px-8 py-4 md:py-6 text-center">
+                                <div className="flex flex-col">
+                                  <span className="text-white text-[10px] md:text-xs font-black tracking-tight">{p.username}</span>
+                                  <span className="text-[9px] md:text-[10px] text-slate-600 font-mono tracking-tighter uppercase">{p.password?.substring(0, 3)}****</span>
+                                </div>
+                              </td>
+                              <td className="px-4 md:px-8 py-4 md:py-6 text-center">
+                                <span className="text-slate-500 text-[9px] font-black uppercase tracking-tighter bg-slate-800/30 px-2 md:px-3 py-1 rounded-lg">
+                                  VIỆT NAM
+                                </span>
+                              </td>
+                              <td className="px-4 md:px-8 py-4 md:py-6 text-center">
+                                <span className="text-slate-500 text-[10px] md:text-[11px] font-bold italic opacity-80">
+                                  {p.expiredAt}
+                                </span>
+                              </td>
+                              <td className="px-4 md:px-8 py-4 md:py-6 text-center">
+                                <span className="bg-green-500/10 text-green-500 border border-green-500/20 px-3 md:px-4 py-1 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest">
+                                  LIVE
+                                </span>
+                              </td>
+                              <td className="px-4 md:px-8 py-4 md:py-6 text-center">
+                                <button 
+                                  onClick={() => handleDeleteProxy(p)}
+                                  className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-90"
+                                  title="Xóa Proxy"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        }) : (
                           <tr>
                             <td colSpan={7} className="px-8 py-20 text-center">
                               <div className="flex flex-col items-center justify-center opacity-20">
