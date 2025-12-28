@@ -80,7 +80,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     if (proxies.length === 0) return;
     const textToCopy = proxies.map(p => `${p.ip}:${p.port}:${p.username}:${p.password}`).join('\n');
     navigator.clipboard.writeText(textToCopy)
-      .then(() => alert(`Đã sao chép ${proxies.length} proxy vào bộ nhớ tạm!`))
+      .then(() => alert(`Đã sao chép ${proxies.length} proxy!`))
       .catch(err => console.error('Lỗi copy:', err));
   };
 
@@ -106,17 +106,17 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
         {/* Navigation Tabs & Logout */}
         <div className="flex items-center space-x-8 mb-8 border-b border-slate-800/50 pb-4">
           <button onClick={() => setActiveTab('main')} className={`text-sm font-black uppercase tracking-widest transition-all ${activeTab === 'main' ? 'text-[#f97316]' : 'text-slate-500 hover:text-white'}`}>
-            Bảng điều khiển
+            {t.navMain}
           </button>
           <button onClick={() => setActiveTab('api')} className={`text-sm font-black uppercase tracking-widest transition-all ${activeTab === 'api' ? 'text-[#f97316]' : 'text-slate-500 hover:text-white'}`}>
-            Tích hợp API
+            {t.navApi}
           </button>
           
           <div className="flex-grow"></div>
           
           <div className="flex items-center space-x-4">
             <div className="bg-[#111827] px-4 py-2 rounded-xl border border-slate-800 flex items-center space-x-3">
-               <span className="text-[10px] font-black text-slate-500 uppercase">Số dư:</span>
+               <span className="text-[10px] font-black text-slate-500 uppercase">{t.balance}:</span>
                <span className="text-white font-black">{balance.toLocaleString()}đ</span>
             </div>
             
@@ -127,7 +127,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              <span>Đăng xuất</span>
+              <span>{t.logout}</span>
             </button>
           </div>
         </div>
@@ -140,12 +140,12 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
               <div className="bg-[#111827] border border-slate-800 rounded-3xl p-8 shadow-2xl">
                 <h2 className="text-lg font-black text-white italic uppercase mb-8 flex items-center">
                   <span className="w-1.5 h-5 bg-[#f97316] mr-3 rounded-full"></span>
-                  ĐẶT MUA PROXY
+                  {t.createProxy}
                 </h2>
 
                 <div className="space-y-6">
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">VỊ TRÍ SERVER</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">{t.serverLocation}</label>
                     <select className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none cursor-pointer focus:border-[#f97316]">
                       <option>Việt Nam - VNPT (Dân cư)</option>
                       <option>Việt Nam - FPT</option>
@@ -155,24 +155,24 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">USERNAME</label>
-                      <input type="text" placeholder="Tùy chọn" className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none focus:border-[#f97316]" />
+                      <input type="text" placeholder="..." className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none focus:border-[#f97316]" />
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">PASSWORD</label>
-                      <input type="text" placeholder="Tùy chọn" className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none focus:border-[#f97316]" />
+                      <input type="text" placeholder="..." className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none focus:border-[#f97316]" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">GIAO THỨC</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">{t.protocol}</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button className="bg-[#f97316] text-white py-3 rounded-xl font-black text-xs uppercase">HTTPS</button>
-                      <button className="bg-[#070b14] border border-slate-800 text-slate-500 py-3 rounded-xl font-black text-xs uppercase cursor-not-allowed">SOCKS5 (Sắp có)</button>
+                      <button className="bg-[#070b14] border border-slate-800 text-slate-500 py-3 rounded-xl font-black text-xs uppercase cursor-not-allowed">SOCKS5</button>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">GÓI THỜI GIAN</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">{t.duration}</label>
                     <select className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none focus:border-[#f97316]">
                       <option>1 Tháng</option>
                       <option>3 Tháng</option>
@@ -181,21 +181,21 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                   </div>
 
                   <div className="bg-orange-600/10 border border-orange-500/20 p-3 rounded-xl text-center">
-                    <span className="text-[#f97316] font-black text-[10px] uppercase">1000 VND / 1PROXY (KHUYẾN MÃI 20%)</span>
+                    <span className="text-[#f97316] font-black text-[10px] uppercase">{t.promoLabel}</span>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">SỐ LƯỢNG</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">{t.quantity}</label>
                     <input type="number" value={form.quantity} onChange={e => setForm({...form, quantity: parseInt(e.target.value) || 1})} className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-4 text-lg font-black outline-none focus:border-[#f97316]" />
                   </div>
 
                   <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
-                    <span className="text-slate-400 text-xs font-bold uppercase">TỔNG TIỀN:</span>
+                    <span className="text-slate-400 text-xs font-bold uppercase">{t.totalPrice}:</span>
                     <span className="text-xl font-black text-[#f97316]">{(1000 * form.quantity).toLocaleString()} VND</span>
                   </div>
 
                   <button className="w-full bg-[#f97316] hover:bg-orange-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-orange-900/20 uppercase tracking-widest transition-all transform active:scale-95">
-                    THANH TOÁN & KÍCH HOẠT
+                    {t.buyBtn}
                   </button>
                 </div>
               </div>
@@ -208,7 +208,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                 <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-[#111827]">
                   <h2 className="text-lg font-black text-white italic uppercase flex items-center">
                     <span className="w-1.5 h-5 bg-[#f97316] mr-3 rounded-full"></span>
-                    DANH SÁCH PROXY
+                    {t.proxyList}
                   </h2>
                   
                   <div className="flex items-center space-x-3">
@@ -217,20 +217,20 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                       className="bg-slate-800/50 hover:bg-slate-700 text-slate-400 text-[10px] font-black py-2.5 px-5 rounded-xl uppercase flex items-center space-x-2 transition-all border border-slate-700"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                      <span>SAO CHÉP</span>
+                      <span>{t.copyAll}</span>
                     </button>
                     <button 
                       onClick={handleDownloadTxt}
                       className="bg-slate-800/50 hover:bg-slate-700 text-slate-400 text-[10px] font-black py-2.5 px-5 rounded-xl uppercase flex items-center space-x-2 transition-all border border-slate-700"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                      <span>TẢI TXT</span>
+                      <span>{t.downloadTxt}</span>
                     </button>
                     <button 
-                      onClick={() => alert("Chức năng xuất Excel đang được bảo trì.")}
+                      onClick={() => alert("Excel service is under maintenance.")}
                       className="bg-slate-900 border border-slate-800 text-slate-300 text-[10px] font-black py-2.5 px-5 rounded-xl uppercase transition-all hover:bg-slate-800"
                     >
-                      XUẤT EXCEL
+                      {t.exportExcel}
                     </button>
                   </div>
                 </div>
@@ -242,11 +242,11 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                         <th className="px-8 py-5 w-16 text-center">
                           <input type="checkbox" className="w-4 h-4 rounded bg-slate-800 border-slate-700 accent-[#f97316]" />
                         </th>
-                        <th className="px-8 py-5">IP:PORT</th>
-                        <th className="px-8 py-5 text-center">TÀI KHOẢN</th>
-                        <th className="px-8 py-5 text-center">VỊ TRÍ</th>
-                        <th className="px-8 py-5 text-center">HẾT HẠN</th>
-                        <th className="px-8 py-5 text-center">TRẠNG THÁI</th>
+                        <th className="px-8 py-5">{t.tableIp}</th>
+                        <th className="px-8 py-5 text-center">{t.tableAccount}</th>
+                        <th className="px-8 py-5 text-center">{t.tableLocation}</th>
+                        <th className="px-8 py-5 text-center">{t.expiredAt}</th>
+                        <th className="px-8 py-5 text-center">{t.status}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/30">
@@ -278,7 +278,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                 </div>
 
                 <div className="p-4 bg-[#070b14] border-t border-slate-800 text-center">
-                  <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">HIỂN THỊ {proxies.length} PROXY</span>
+                  <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">{proxies.length} PROXIES</span>
                 </div>
               </div>
             </div>
@@ -289,13 +289,13 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
             <div className="max-w-3xl">
               <h2 className="text-2xl font-black text-white italic uppercase mb-4 flex items-center">
                 <span className="w-1.5 h-6 bg-[#f97316] mr-3 rounded-full"></span>
-                Kết nối API hệ thống
+                {t.apiTitle}
               </h2>
-              <p className="text-slate-500 mb-10 leading-relaxed text-sm font-medium">Sử dụng Token dưới đây để tích hợp Proxy vào các công cụ tự động của bạn. Vui lòng không chia sẻ token này với bất kỳ ai.</p>
+              <p className="text-slate-500 mb-10 leading-relaxed text-sm font-medium">{t.apiSub}</p>
               
               <div className="space-y-8">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">YOUR PERSONAL ACCESS TOKEN (JWT)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">{t.apiTokenLabel}</label>
                   <div className="flex bg-[#070b14] border border-slate-800 rounded-2xl p-2 items-center group focus-within:border-[#f97316] transition-all">
                     <input 
                       type="text" 
@@ -304,7 +304,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                       className="flex-grow bg-transparent text-[#f97316] font-mono text-xs p-3 outline-none overflow-hidden text-ellipsis font-bold"
                     />
                     <button 
-                      onClick={() => {navigator.clipboard.writeText(token); alert("Đã copy token!");}}
+                      onClick={() => {navigator.clipboard.writeText(token); alert("Copied!");}}
                       className="bg-[#f97316] hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase transition-all active:scale-95 shadow-lg shadow-orange-900/20"
                     >
                       Copy
@@ -315,20 +315,16 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                 <div className="bg-[#070b14] p-8 rounded-3xl border border-slate-800">
                   <h4 className="text-[#f97316] font-black uppercase text-xs mb-4 flex items-center">
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    Hướng dẫn tích hợp
+                    {t.apiGuide}
                   </h4>
                   <ul className="text-slate-500 text-xs space-y-4 font-medium">
                     <li className="flex items-start">
                       <span className="text-[#f97316] mr-3 font-bold">01.</span>
-                      <span>Endpoint lấy danh sách proxy: <code className="text-blue-400 font-mono bg-blue-400/5 px-2 py-1 rounded">GET https://proxynuoinick.com/api/api/tasks/proxy?tenkhach={userPhone}</code></span>
+                      <span>Endpoint: <code className="text-blue-400 font-mono bg-blue-400/5 px-2 py-1 rounded">GET https://proxynuoinick.com/api/api/tasks/proxy?tenkhach={userPhone}</code></span>
                     </li>
                     <li className="flex items-start">
                       <span className="text-[#f97316] mr-3 font-bold">02.</span>
-                      <span>Header xác thực: <code className="text-blue-400 font-mono bg-blue-400/5 px-2 py-1 rounded">Authorization: Bearer [TOKEN]</code></span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-[#f97316] mr-3 font-bold">03.</span>
-                      <span>Token này được lấy trực tiếp từ quá trình đăng nhập hệ thống toolregclone.</span>
+                      <span>Header: <code className="text-blue-400 font-mono bg-blue-400/5 px-2 py-1 rounded">Authorization: Bearer [TOKEN]</code></span>
                     </li>
                   </ul>
                 </div>
