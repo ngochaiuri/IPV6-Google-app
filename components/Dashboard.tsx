@@ -49,7 +49,12 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     if (!userPhone) return;
     setIsLoadingProxies(true);
     try {
-      const response = await fetch(`https://proxynuoinick.com/api/api/tasks/proxy?tenkhach=${userPhone}`);
+      const response = await fetch(`https://proxynuoinick.com/api/api/tasks/proxy?tenkhach=${userPhone}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'accept': '*/*'
+        }
+      });
       const data = await response.json();
       if (data?.du_lieu_proxy) {
         const mappedProxies = data.du_lieu_proxy.map((item: any, idx: number) => ({
@@ -62,7 +67,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
           expiredAt: item.ngayHeThan || '...',
           status: 'active'
         }));
-        // Đảo ngược mảng để proxy mới nhất hiển thị lên đầu trang
         setProxies(mappedProxies.reverse());
       }
     } catch (e) { 
@@ -73,15 +77,20 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       setSelectedIds(new Set());
       setCurrentPage(1);
     }
-  }, [userPhone]);
+  }, [userPhone, token]);
 
   const fetchBalance = useCallback(async () => {
     try {
-      const response = await fetch(`https://proxynuoinick.com/api/api/tasks/diem?tenkhach=${userPhone}`);
+      const response = await fetch(`https://proxynuoinick.com/api/api/tasks/diem?tenkhach=${userPhone}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'accept': '*/*'
+        }
+      });
       const data = await response.json();
       setBalance(Number(data.diemhientai) || 0);
     } catch (e) {}
-  }, [userPhone]);
+  }, [userPhone, token]);
 
   useEffect(() => {
     fetchBalance();
@@ -130,7 +139,11 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       };
       const response = await fetch("https://proxynuoinick.com/api/api/tasks/start", {
         method: "POST",
-        headers: { "accept": "*/*", "content-type": "application/json", "Authorization": `Bearer ${token}` },
+        headers: { 
+          "accept": "*/*", 
+          "content-type": "application/json", 
+          "Authorization": `Bearer ${token}` 
+        },
         body: JSON.stringify(payload)
       });
       const result = await response.json();
@@ -146,7 +159,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
 
   const handleRenewProxies = async () => {
     const targets = proxies.filter(p => selectedIds.has(p.id));
-    
     if (targets.length === 0) {
       alert("Vui lòng chọn proxy cần gia hạn.");
       return;
@@ -185,8 +197,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
           fetchBalance();
           fetchProxies();
         }
-      } else {
-        alert("Có lỗi xảy ra trong quá trình gia hạn.");
       }
     } catch (err) {
       alert("Lỗi kết nối khi gia hạn.");
@@ -196,20 +206,24 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
   };
 
   const handleDeleteProxy = async (proxy: ProxyInstance) => {
-    if (!window.confirm(t.confirmDelete)) return;
+    if (!window.confirm(t.confirmDelete || "Bạn có chắc chắn muốn xóa proxy này?")) return;
     
     setIsDeleting(true);
     try {
-      const fullProxy = encodeURIComponent(`${proxy.ip}:${proxy.port}:${proxy.username}:${proxy.password}`);
-      const url = `https://proxynuoinick.com/api/api/tasks/xoaproxy?tenkhach=${userPhone}&fullproxy=${fullProxy}`;
+      const fullProxy = `${proxy.ip}:${proxy.port}:${proxy.username}:${proxy.password}`;
+      const url = `https://proxynuoinick.com/api/api/tasks/xoaproxy?tenkhach=${userPhone}&fullproxy=${encodeURIComponent(fullProxy)}`;
       
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'accept': '*/*' }
+        headers: { 
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`
+        },
+        body: '' // Empty body as per curl example
       });
       
       const result = await response.json();
-      alert(result.message || "Đã xử lý xóa.");
+      alert(result.message || "Đã xóa thành công.");
       fetchProxies();
     } catch (err) {
       alert("Lỗi kết nối khi xóa proxy.");
@@ -226,13 +240,23 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     
     setIsDeleting(true);
     try {
-      // Xóa tuần tự từng cái do API nhận fullproxy đơn lẻ theo query
-      for (const proxy of targets) {
-        const fullProxy = encodeURIComponent(`${proxy.ip}:${proxy.port}:${proxy.username}:${proxy.password}`);
-        const url = `https://proxynuoinick.com/api/api/tasks/xoaproxy?tenkhach=${userPhone}&fullproxy=${fullProxy}`;
-        await fetch(url, { method: 'POST', headers: { 'accept': '*/*' } });
-      }
-      alert("Hoàn tất xử lý xóa hàng loạt.");
+      // API hiện tại nhận 1 fullproxy mỗi lần, nên ta sẽ loop hoặc nếu backend hỗ trợ mảng thì cập nhật sau
+      // Ở đây ta dùng Promise.all để tối ưu hóa thời gian
+      const deletePromises = targets.map(proxy => {
+        const fullProxy = `${proxy.ip}:${proxy.port}:${proxy.username}:${proxy.password}`;
+        const url = `https://proxynuoinick.com/api/api/tasks/xoaproxy?tenkhach=${userPhone}&fullproxy=${encodeURIComponent(fullProxy)}`;
+        return fetch(url, {
+          method: 'POST',
+          headers: { 
+            'accept': '*/*',
+            'Authorization': `Bearer ${token}`
+          },
+          body: ''
+        });
+      });
+
+      await Promise.all(deletePromises);
+      alert(`Đã xóa thành công ${targets.length} proxy.`);
       fetchProxies();
     } catch (err) {
       alert("Lỗi trong quá trình xóa hàng loạt.");
@@ -441,7 +465,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                         className="flex-grow sm:flex-grow-0 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-[9px] md:text-[11px] font-black py-2.5 md:py-3 px-4 md:px-6 rounded-xl md:rounded-2xl uppercase flex items-center justify-center space-x-2 transition-all border border-red-500/20 shadow-inner group active:scale-95"
                       >
                         <svg className="w-3.5 h-3.5 md:w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        <span className="whitespace-nowrap italic tracking-tighter">{t.deleteSelected} ({selectedIds.size})</span>
+                        <span className="whitespace-nowrap italic tracking-tighter">XÓA ĐÃ CHỌN ({selectedIds.size})</span>
                       </button>
                     )}
 
@@ -536,7 +560,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                               <button 
                                 onClick={() => handleDeleteProxy(p)}
                                 className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-90"
-                                title={t.deleteBtn}
+                                title="Xóa Proxy"
                               >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                               </button>

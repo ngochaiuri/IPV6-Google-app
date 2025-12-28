@@ -6,12 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ProxyNuoiNick - Proxy IPv6 Dân Cư Tốc Độ Cao</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --font-inter: 'Inter', sans-serif;
+        }
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: var(--font-inter);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
         .glass-effect {
             background: rgba(15, 23, 42, 0.8);
@@ -41,6 +47,10 @@
         }
         .custom-scrollbar::-webkit-scrollbar {
             height: 6px;
+        }
+        /* Fix font rendering for heavy weights */
+        .font-black {
+            font-weight: 900 !important;
         }
     </style>
 <script type="importmap">
