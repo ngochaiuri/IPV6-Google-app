@@ -91,11 +91,64 @@ export const translations: Record<Language, any> = {
       ctaBtn: 'Gọi Ngay: 0813149999 (Zalo)',
       contactInfo: 'Hotline: 0813149999 - Bảo Sâm (Hỗ trợ qua Zalo)'
     },
+    faq: {
+      title: 'Câu hỏi thường gặp',
+      sub: 'Giải đáp nhanh các thắc mắc về dịch vụ Proxy IPv6',
+      items: [
+        { question: 'Proxy IPv6 là gì?', answer: 'Proxy IPv6 là giao thức internet thế hệ mới với dải IP khổng lồ và chi phí rẻ.' },
+        { question: 'Làm thế nào để bắt đầu?', answer: 'Bạn chỉ cần đăng ký tài khoản, nạp tiền và chọn gói proxy phù hợp.' },
+        { question: 'Có hỗ trợ SOCKS5 không?', answer: 'Có, hệ thống hỗ trợ đầy đủ HTTP/HTTPS và SOCKS5.' }
+      ]
+    },
+    footer: {
+      desc: 'Giải pháp Proxy IPv6 dân cư hàng đầu Việt Nam. Tốc độ cao, ổn định và bảo mật tuyệt đối.',
+      services: 'Dịch vụ',
+      serviceList: ['Proxy IPv6 VNPT', 'Proxy IPv6 FPT', 'Proxy IPv6 Viettel', 'Proxy Mobile'],
+      support: 'Hỗ trợ',
+      supportList: [
+        { label: 'Hướng dẫn sử dụng', tab: 'tutorials' },
+        { label: 'Liên hệ', tab: 'contact' },
+        { label: 'Điều khoản', tab: 'terms' }
+      ],
+      newsletter: 'Bản tin',
+      newsletterSub: 'Nhận thông tin khuyến mãi sớm nhất từ chúng tôi.',
+      newsletterPlaceholder: 'Email của bạn',
+      newsletterBtn: 'Đăng ký',
+      rights: 'Đã đăng ký bản quyền.'
+    },
+    tutorials: {
+      title: 'Hướng dẫn',
+      highlight: 'Sử dụng',
+      sub: 'Bắt đầu sử dụng ProxyNuoiNick chỉ với vài bước đơn giản.',
+      items: [
+        { title: 'Mua Proxy', steps: ['Đăng ký tài khoản', 'Nạp tiền vào ví', 'Chọn gói cần mua', 'Nhận thông tin Proxy'] },
+        { title: 'Sử dụng', steps: ['Copy IP:Port:User:Pass', 'Dán vào tool nuôi nick', 'Kiểm tra trạng thái IP', 'Bắt đầu làm việc'] }
+      ]
+    },
+    contact: {
+      title: 'Liên hệ',
+      highlight: 'Hỗ trợ',
+      sub: 'Đội ngũ kỹ thuật luôn sẵn sàng hỗ trợ bạn 24/7.',
+      zalo: '0813149999',
+      telegram: '@baosamproxy',
+      email: 'support@proxynuoinick.com',
+      address: 'Thành phố Hồ Chí Minh, Việt Nam',
+      workingHours: 'Hỗ trợ 24/7 tất cả các ngày trong tuần'
+    },
+    terms: {
+      title: 'Điều khoản',
+      highlight: 'Dịch vụ',
+      sub: 'Vui lòng đọc kỹ các quy định khi sử dụng dịch vụ của chúng tôi.',
+      sections: [
+        { title: 'Quy định sử dụng', content: 'Nghiêm cấm sử dụng proxy cho các hoạt động vi phạm pháp luật.' },
+        { title: 'Chính sách hoàn tiền', content: 'Hoàn tiền trong 24h nếu dịch vụ gặp lỗi kỹ thuật không thể khắc phục.' }
+      ]
+    },
     auth: {
       loginTitle: 'Chào mừng trở lại',
       loginSub: 'Đăng nhập để quản lý Proxy',
       regTitle: 'Tạo tài khoản',
-      regSub: 'Bắt đầu ngay',
+      regSub: 'Bắt đầu ngay hôm nay',
       phone: 'Số điện thoại',
       pass: 'Mật khẩu',
       confirmPass: 'Xác nhận mật khẩu',
@@ -126,40 +179,22 @@ export const translations: Record<Language, any> = {
       status: 'Status',
       expiredAt: 'Expires At',
       quantity: 'Quantity'
-    }
+    },
+    hero: { title1: 'Residential', title2: 'IPv6 Proxy', label: 'Create Online', sub: 'Fast and secure proxy solutions.', btnStart: 'Start Now', btnPrice: 'Pricing' },
+    footer: { desc: 'Premium Proxy Solutions.', services: 'Services', serviceList: ['IPv6 Proxy'], support: 'Support', supportList: [], newsletter: 'Newsletter', newsletterBtn: 'Sub', rights: 'All rights reserved.' },
+    faq: { title: 'FAQ', sub: 'Frequently Asked Questions', items: [] },
+    tutorials: { title: 'Tutorials', highlight: 'Guide', sub: 'How to use', items: [] },
+    contact: { title: 'Contact', highlight: 'Us', sub: 'We are here', zalo: '0813149999' },
+    terms: { title: 'Terms', highlight: 'Service', sub: 'Policies', sections: [] },
+    pricing: { title: 'Pricing', highlight: 'Best', sub: 'Save more', bestValue: 'Best Value', btnSelect: 'Select', plans: { '1-month': { name: '1 Month' }, '3-months': { name: '3 Months' }, '6-months': { name: '6 Months' }, '12-months': { name: '12 Months' } } },
+    auth: { loginTitle: 'Login', btnLogin: 'Login', btnReg: 'Register' }
   },
   zh: {
     nav: { home: '首页', pricing: '价格', affiliate: '加盟', contact: '联系我们', support: '支持', login: '登录', register: '注册' },
-    dashboard: {
-      title: '代理管理',
-      balance: '钱包余额',
-      createProxy: '在线购买代理',
-      proxyList: '代理列表',
-      buyBtn: '支付并激活',
-      active: '活跃',
-      expired: '已过期',
-      refresh: '刷新数据',
-      copyAll: '全部复制',
-      status: '状态',
-      expiredAt: '到期时间',
-      quantity: '购买数量'
-    }
+    dashboard: { title: '代理管理', balance: '余额', createProxy: '购买代理', proxyList: '列表', buyBtn: '激活' }
   },
   ru: {
     nav: { home: 'Главная', pricing: 'Цены', affiliate: 'Партнерам', contact: 'Контакты', support: 'Поддержка', login: 'Вход', register: 'Регистрация' },
-    dashboard: {
-      title: 'Управление прокси',
-      balance: 'Баланс кошелька',
-      createProxy: 'Купить прокси онлайн',
-      proxyList: 'Ваши прокси',
-      buyBtn: 'Оплатить и активировать',
-      active: 'Активен',
-      expired: 'Истек',
-      refresh: 'Обновить данные',
-      copyAll: 'Копировать все',
-      status: 'Статус',
-      expiredAt: 'Срок действия',
-      quantity: 'Количество'
-    }
+    dashboard: { title: 'Управление', balance: 'Баланс', createProxy: 'Купить', proxyList: 'Список', buyBtn: 'Оплатить' }
   }
 };
