@@ -10,51 +10,124 @@ import ProxyAdvisor from './components/ProxyAdvisor';
 import Login from './components/Login';
 import Register from './components/Register';
 import Affiliate from './components/Affiliate';
+import Dashboard from './components/Dashboard';
+import CTAHome from './components/CTAHome';
+import { Tutorials, Contact, Terms } from './components/SupportPages';
+import { Language } from './types';
+import { translations } from './translations';
+
+export type AppTab = 'home' | 'pricing' | 'support' | 'login' | 'register' | 'tutorials' | 'contact' | 'terms' | 'affiliate' | 'dashboard';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'home' | 'pricing' | 'support' | 'login' | 'register'>('home');
+  const [activeTab, setActiveTab] = useState<AppTab>('home');
+  const [lang, setLang] = useState<Language>('vi');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Cuộn lên đầu trang khi chuyển tab
+  const t = translations[lang];
+
   useEffect(() => {
-    window.scrollTo(0, 0);
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      setIsLoggedIn(true);
+      // Nếu đã login mà đang ở trang login/reg thì đẩy vào dashboard
+      if (activeTab === 'login' || activeTab === 'register' || activeTab === 'home') {
+        setActiveTab('dashboard');
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeTab]);
 
+  const handleNavigate = (tab: any) => {
+    setActiveTab(tab as AppTab);
+  };
+
+  const handleLoginSuccess = (token: string) => {
+    localStorage.setItem('auth_token', token);
+    setIsLoggedIn(true);
+    setActiveTab('dashboard');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    setIsLoggedIn(false);
+    setActiveTab('home');
+  };
+
+  const showHeaderFooter = activeTab !== 'login' && activeTab !== 'register';
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header onNavigate={(tab) => setActiveTab(tab)} activeTab={activeTab} />
+    <div className="min-h-screen flex flex-col bg-slate-950">
+      {showHeaderFooter && (
+        <Header 
+          onNavigate={handleNavigate} 
+          activeTab={activeTab} 
+          lang={lang} 
+          setLang={setLang}
+          t={t.nav}
+          isLoggedIn={isLoggedIn}
+        />
+      )}
       
       <main className="flex-grow">
         {activeTab === 'home' && (
           <>
-            <Hero onNavigate={(tab) => setActiveTab(tab)} />
-            <Features />
-            <Pricing />
-            <Affiliate />
-            <FAQ />
+            <Hero onNavigate={handleNavigate} t={t.hero} />
+            <Features t={t.features} />
+            <Pricing t={t.pricing} />
+            <Affiliate t={t.affiliate} />
+            <CTAHome t={t.ctaHome} onNavigate={handleNavigate} />
+            <FAQ t={t.faq} />
           </>
+        )}
+        {activeTab === 'dashboard' && (
+          <Dashboard t={t.dashboard} onLogout={handleLogout} />
         )}
         {activeTab === 'pricing' && (
           <div className="pt-24 pb-12">
-            <Pricing />
+            <Pricing t={t.pricing} />
+          </div>
+        )}
+        {activeTab === 'affiliate' && (
+          <div className="pt-24 pb-12">
+            <Affiliate t={t.affiliate} />
           </div>
         )}
         {activeTab === 'support' && (
           <div className="pt-24 pb-12">
-            <FAQ />
+            <FAQ t={t.faq} />
+          </div>
+        )}
+        {activeTab === 'tutorials' && (
+          <div className="pt-24 pb-12">
+            <Tutorials t={t.tutorials} />
+          </div>
+        )}
+        {activeTab === 'contact' && (
+          <div className="pt-24 pb-12">
+            <Contact t={t.contact} />
+          </div>
+        )}
+        {activeTab === 'terms' && (
+          <div className="pt-24 pb-12">
+            <Terms t={t.terms} />
           </div>
         )}
         {activeTab === 'login' && (
-          <Login onNavigate={(tab) => setActiveTab(tab)} />
+          <Login onNavigate={handleNavigate} onLoginSuccess={handleLoginSuccess} t={t.auth} />
         )}
         {activeTab === 'register' && (
-          <Register onNavigate={(tab) => setActiveTab(tab)} />
+          <Register onNavigate={handleNavigate} t={t.auth} />
         )}
       </main>
 
-      {/* Floating Proxy Advisor powered by Gemini */}
-      <ProxyAdvisor />
+      {activeTab !== 'dashboard' && <ProxyAdvisor lang={lang} />}
       
-      {activeTab !== 'login' && activeTab !== 'register' && <Footer />}
+      {showHeaderFooter && (
+        <Footer t={t.footer} onNavigate={handleNavigate} />
+      )}
     </div>
   );
 };

@@ -1,31 +1,38 @@
 
 import { GoogleGenAI } from "@google/genai";
+import { Language } from "../types";
 
-const API_KEY = process.env.API_KEY || "";
+// Removed global API_KEY definition to follow coding guidelines
 
-export const getProxyRecommendation = async (userInput: string) => {
-  if (!API_KEY) return "Vui lòng cấu hình API Key để sử dụng tính năng này.";
-
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+/**
+ * Gets a proxy recommendation from Gemini based on user input.
+ * Strictly follows @google/genai guidelines for client initialization.
+ */
+export const getProxyRecommendation = async (userInput: string, lang: Language = 'vi') => {
+  // Always use process.env.API_KEY directly in the named parameter.
+  // Initialization is done inside the function to ensure it uses the current API key.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: userInput,
       config: {
-        systemInstruction: `Bạn là một chuyên gia tư vấn về Proxy cho người dùng Việt Nam. 
-        Hãy tư vấn loại Proxy phù hợp nhất dựa trên nhu cầu của họ (ví dụ: nuôi nick Facebook, chạy ads, cày game, làm mmo).
-        Các sản phẩm hiện có:
-        1. IPv4 Shared: Rẻ, phù hợp nuôi nhiều nick.
-        2. IPv4 Private: Tốc độ cao, dành cho chạy Ads hoặc cần độ tin cậy tuyệt đối.
-        3. IPv6: Giá cực rẻ, phù hợp cho các tool hỗ trợ IPv6.
-        4. Residential: Proxy dân cư, khó bị phát hiện nhất, dành cho việc đăng ký tài khoản khó hoặc checkout.
-        
-        Hãy trả lời ngắn gọn, súc tích và chuyên nghiệp bằng Tiếng Việt.`,
+        systemInstruction: `You are a professional Proxy consultant for ProxyNuoiNick.
+        Your goal is to suggest the best proxy type based on user needs (Facebook account farming, TikTok, Gaming, Ads, MMO).
+        Language to respond in: ${lang}.
+        Current offerings:
+        1. IPv4 Shared: Cheap, good for multi-accounting.
+        2. IPv4 Private: High speed, dedicated, for Ads or high reliability.
+        3. IPv6: Extremely cheap, for IPv6 compatible tools.
+        4. Residential: Residential IP, hardest to detect, best for checkouts or registration on strict sites.
+        Keep your answer concise and professional.`,
       },
     });
+    // Directly access .text property as per guidelines
     return response.text;
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "Xin lỗi, tôi gặp sự cố khi tư vấn. Vui lòng thử lại sau.";
+    return "Error communicating with AI.";
   }
 };

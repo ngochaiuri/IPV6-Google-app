@@ -2,155 +2,157 @@
 import React, { useState } from 'react';
 
 interface LoginProps {
-  onNavigate: (tab: 'home' | 'pricing' | 'support' | 'login' | 'register') => void;
+  onNavigate: (tab: 'home' | 'pricing' | 'support' | 'login' | 'register' | 'dashboard') => void;
+  onLoginSuccess: (token: string) => void;
+  t: any;
 }
 
-const Login: React.FC<LoginProps> = ({ onNavigate }) => {
-  const [email, setEmail] = useState('');
+const Login: React.FC<LoginProps> = ({ onNavigate, onLoginSuccess, t }) => {
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const getPublicIP = async () => {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      return data.ip;
+    } catch (error) {
+      return "14.163.106.245"; 
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login attempt with:', { email, password });
-    // Backend handling logic would go here
+    setMessage(null);
+    setLoading(true);
+
+    try {
+      const userIP = await getPublicIP();
+      
+      const payload = {
+        tendangnhap_id: phoneNumber,
+        matkhau_pass: password,
+        ip: userIP
+      };
+
+      const response = await fetch('https://toolregclone.com/login/login.php', {
+        method: 'POST',
+        headers: {
+          'Accept': '*/*',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const contentType = response.headers.get("content-type");
+      let apiText = "";
+      let result: any = {};
+
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        result = await response.json();
+        apiText = result.message || result.result || JSON.stringify(result);
+      } else {
+        apiText = await response.text();
+      }
+
+      const lowRes = apiText.toLowerCase();
+      const isSuccess = lowRes.includes('thành công') || lowRes.includes('success') || apiText.trim() === '1' || result.status === 'success';
+
+      if (isSuccess) {
+        setMessage({ type: 'success', text: 'Đăng nhập thành công! Đang chuyển hướng...' });
+        
+        // Save the phone number for display in Dashboard
+        localStorage.setItem('user_phone', phoneNumber);
+
+        let token = result.token || result.access_token || result.data?.token;
+        if (!token) {
+          const cookieMatch = document.cookie.match(/token=([^;]+)/);
+          if (cookieMatch) {
+            token = cookieMatch[1];
+          }
+        }
+        
+        if (!token) {
+          token = 'pn_user_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        setTimeout(() => {
+          onLoginSuccess(token);
+        }, 800);
+      } else {
+        setMessage({ type: 'error', text: apiText || 'Thông tin đăng nhập không chính xác.' });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setMessage({ type: 'error', text: 'Lỗi kết nối hoặc yêu cầu bị chặn. Vui lòng thử lại.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 relative overflow-hidden">
-      {/* Background Decorative Blurs */}
       <div className="absolute top-1/4 -left-20 w-96 h-96 bg-orange-600/10 rounded-full blur-[100px] -z-0"></div>
       <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-amber-600/10 rounded-full blur-[100px] -z-0"></div>
 
       <div className="max-w-md w-full z-10">
         <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-8 sm:p-10">
           <div className="text-center mb-10">
-            <div 
-              className="inline-flex items-center justify-center w-16 h-16 bg-orange-600 rounded-2xl shadow-lg shadow-orange-900/40 mb-6 cursor-pointer"
-              onClick={() => onNavigate('home')}
-            >
-              <span className="text-white font-bold text-3xl">P</span>
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-600 rounded-2xl shadow-lg mb-6 cursor-pointer" onClick={() => onNavigate('home')}>
+              <span className="text-white font-bold text-3xl">PN</span>
             </div>
-            <h2 className="text-3xl font-bold text-white mb-2">Chào mừng trở lại</h2>
-            <p className="text-slate-400">Đăng nhập để quản lý Proxy của bạn</p>
+            <h2 className="text-3xl font-bold text-white mb-2">{t.loginTitle}</h2>
+            <p className="text-slate-400">{t.loginSub}</p>
           </div>
+
+          {message && (
+            <div className={`mb-6 p-4 rounded-xl text-sm font-medium ${message.type === 'success' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+              {message.text}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2" htmlFor="email">
-                Địa chỉ Email
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                  </svg>
-                </div>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-11 pr-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
-                  placeholder="name@example.com"
-                  required
-                />
-              </div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">{t.phone}</label>
+              <input
+                type="tel"
+                disabled={loading}
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                className="block w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 transition-all placeholder-slate-600"
+                placeholder="Số điện thoại"
+                required
+              />
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-medium text-slate-300" htmlFor="password">
-                  Mật khẩu
-                </label>
-                <a href="#" className="text-xs font-medium text-orange-500 hover:text-orange-400">
-                  Quên mật khẩu?
-                </a>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-11 pr-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center">
+              <label className="block text-sm font-medium text-slate-300 mb-2">{t.pass}</label>
               <input
-                id="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-orange-600 focus:ring-orange-500 bg-slate-950 border-slate-800 rounded cursor-pointer"
+                type="password"
+                disabled={loading}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="block w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 transition-all placeholder-slate-600"
+                placeholder="••••••••"
+                required
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-400 cursor-pointer select-none">
-                Ghi nhớ đăng nhập
-              </label>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-900/20 transition-all transform active:scale-95"
+              disabled={loading}
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition-all transform active:scale-95 disabled:opacity-70 flex items-center justify-center space-x-2"
             >
-              Đăng nhập ngay
+              {loading && <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>}
+              <span>{loading ? 'Đang xác thực...' : t.btnLogin}</span>
             </button>
           </form>
 
-          <div className="mt-8 relative">
-            <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-slate-800"></div>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-slate-900 px-2 text-slate-500">Hoặc tiếp tục với</span>
-            </div>
-          </div>
-
-          <div className="mt-8 grid grid-cols-2 gap-4">
-            <button className="flex items-center justify-center bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 hover:bg-slate-800 transition-colors group">
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.273 0 3.191 2.691 1.245 6.655l4.021 3.11z"/>
-                <path fill="#34A853" d="M16.04 18.013c-1.09.591-2.418.914-3.84.914-2.727 0-5.064-1.855-5.882-4.345L2.245 17.7C4.191 21.655 8.273 24.345 12.8 24.345c3.218 0 6.136-1.091 8.318-2.945l-5.078-3.387z"/>
-                <path fill="#4285F4" d="M23.49 12.273c0-.818-.082-1.609-.205-2.386H12.8v4.582h6.014c-.259 1.391-1.045 2.573-2.223 3.364l5.078 3.387c2.973-2.727 4.686-6.75 4.686-11.273z"/>
-                <path fill="#FBBC05" d="M6.318 14.582c-.227-.682-.364-1.409-.364-2.182s.136-1.5.364-2.182L2.245 7.109C1.455 8.618 1 10.273 1 12s.455 3.382 1.245 4.891l4.073-3.309z"/>
-              </svg>
-              <span className="text-slate-300 text-sm group-hover:text-white transition-colors">Google</span>
-            </button>
-            <button className="flex items-center justify-center bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 hover:bg-slate-800 transition-colors group">
-              <svg className="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
-              <span className="text-slate-300 text-sm group-hover:text-white transition-colors">Facebook</span>
-            </button>
-          </div>
-
           <p className="mt-10 text-center text-sm text-slate-500">
-            Chưa có tài khoản?{' '}
-            <button 
-              onClick={() => onNavigate('register')}
-              className="font-bold text-orange-500 hover:text-orange-400"
-            >
-              Đăng ký ngay
-            </button>
+            {t.noAccount} <button onClick={() => onNavigate('register')} className="font-bold text-orange-500 hover:text-orange-400">{t.btnReg}</button>
           </p>
-        </div>
-
-        <div className="mt-8 text-center">
-          <button 
-            onClick={() => onNavigate('home')}
-            className="text-slate-500 hover:text-slate-300 transition-colors text-sm inline-flex items-center"
-          >
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Quay lại trang chủ
-          </button>
         </div>
       </div>
     </div>

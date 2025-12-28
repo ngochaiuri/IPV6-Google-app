@@ -1,4 +1,6 @@
 
+export type Language = 'vi' | 'en' | 'zh' | 'ru';
+
 export interface ProxyPlan {
   id: string;
   name: string;
@@ -7,6 +9,19 @@ export interface ProxyPlan {
   features: string[];
   recommended?: boolean;
   type: 'IPv4' | 'IPv6' | 'Residential' | 'SOCKS5';
+}
+
+export interface ProxyInstance {
+  id: string;
+  ip: string;
+  port: number;
+  username: string;
+  password?: string;
+  protocol: 'HTTP' | 'SOCKS5';
+  location: string;
+  createdAt: string;
+  expiredAt: string;
+  status: 'active' | 'expired';
 }
 
 export interface FAQItem {
