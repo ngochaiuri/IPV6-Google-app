@@ -210,16 +210,20 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     
     setIsDeleting(true);
     try {
-      const fullProxy = `${proxy.ip}:${proxy.port}:${proxy.username}:${proxy.password}`;
-      const url = `https://proxynuoinick.com/api/api/tasks/xoaproxy?tenkhach=${userPhone}&fullproxy=${encodeURIComponent(fullProxy)}`;
+      const fullProxyString = `${proxy.ip}:${proxy.port}:${proxy.username}:${proxy.password}`;
+      const payload = {
+        tenkhach: userPhone,
+        listfullproxy: [fullProxyString]
+      };
       
-      const response = await fetch(url, {
+      const response = await fetch("https://proxynuoinick.com/api/api/tasks/xoaproxy", {
         method: 'POST',
         headers: { 
           'accept': '*/*',
+          'content-type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: '' // Empty body as per curl example
+        body: JSON.stringify(payload)
       });
       
       const result = await response.json();
@@ -240,23 +244,24 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     
     setIsDeleting(true);
     try {
-      // API hiện tại nhận 1 fullproxy mỗi lần, nên ta sẽ loop hoặc nếu backend hỗ trợ mảng thì cập nhật sau
-      // Ở đây ta dùng Promise.all để tối ưu hóa thời gian
-      const deletePromises = targets.map(proxy => {
-        const fullProxy = `${proxy.ip}:${proxy.port}:${proxy.username}:${proxy.password}`;
-        const url = `https://proxynuoinick.com/api/api/tasks/xoaproxy?tenkhach=${userPhone}&fullproxy=${encodeURIComponent(fullProxy)}`;
-        return fetch(url, {
-          method: 'POST',
-          headers: { 
-            'accept': '*/*',
-            'Authorization': `Bearer ${token}`
-          },
-          body: ''
-        });
+      const fullProxyStrings = targets.map(p => `${p.ip}:${p.port}:${p.username}:${p.password}`);
+      const payload = {
+        tenkhach: userPhone,
+        listfullproxy: fullProxyStrings
+      };
+
+      const response = await fetch("https://proxynuoinick.com/api/api/tasks/xoaproxy", {
+        method: 'POST',
+        headers: { 
+          'accept': '*/*',
+          'content-type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
       });
 
-      await Promise.all(deletePromises);
-      alert(`Đã xóa thành công ${targets.length} proxy.`);
+      const result = await response.json();
+      alert(result.message || `Đã xóa thành công ${targets.length} proxy.`);
       fetchProxies();
     } catch (err) {
       alert("Lỗi trong quá trình xóa hàng loạt.");
