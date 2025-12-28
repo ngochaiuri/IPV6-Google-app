@@ -13,6 +13,7 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
   const [activeTab, setActiveTab] = useState<Tab>('main');
   const [balance, setBalance] = useState<number>(0);
   const [isLoadingProxies, setIsLoadingProxies] = useState(true);
+  const [isOrdering, setIsOrdering] = useState(false);
   const [proxies, setProxies] = useState<ProxyInstance[]>([]);
   const [token] = useState(localStorage.getItem('api_token') || '');
   const [userPhone] = useState(localStorage.getItem('user_phone') || '');
@@ -22,8 +23,8 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     protocol: 'HTTPS',
     duration: '1 Tháng',
     quantity: 1,
-    username: '',
-    password: ''
+    username: userPhone, // Mặc định dùng SĐT làm username proxy
+    password: userPhone  // Mặc định dùng SĐT làm password proxy
   });
 
   const fetchProxies = useCallback(async () => {
@@ -35,29 +36,17 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       if (data?.du_lieu_proxy) {
         setProxies(data.du_lieu_proxy.map((item: any, idx: number) => ({
           id: `p-${idx}`,
-          ip: item.fullXuat?.split(':')[0] || '103.145.2.14',
-          port: item.fullXuat?.split(':')[1] || '8080',
-          username: item.username || 'user_test',
-          password: item.password || '******',
+          ip: item.fullXuat?.split(':')[0] || '...',
+          port: item.fullXuat?.split(':')[1] || '...',
+          username: item.username || '...',
+          password: item.password || '...',
           location: 'Việt Nam (VNPT)',
-          expiredAt: item.ngayHeThan || '2024-06-20',
+          expiredAt: item.ngayHeThan || '...',
           status: 'active'
         })));
       }
     } catch (e) { 
       console.error(e); 
-      setProxies([{
-        id: 'demo-1',
-        ip: '103.145.2.14',
-        port: 8080,
-        username: 'user_test',
-        password: 'password_demo',
-        protocol: 'HTTP',
-        location: 'Việt Nam (VNPT)',
-        createdAt: '2024-05-20',
-        expiredAt: '2024-06-20',
-        status: 'active'
-      }]);
     }
     finally { setIsLoadingProxies(false); }
   }, [userPhone]);
@@ -75,7 +64,58 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     fetchProxies();
   }, [fetchBalance, fetchProxies]);
 
-  // Tính năng Sao chép
+  const handleOrderProxy = async () => {
+    if (!token) {
+      alert("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại.");
+      return;
+    }
+
+    setIsOrdering(true);
+    try {
+      // Quy đổi thời gian
+      let soNgay = 30;
+      if (form.duration === '3 Tháng') soNgay = 90;
+      if (form.duration === '1 Năm') soNgay = 365;
+
+      const payload = {
+        userId: userPhone,
+        numProxy: form.quantity,
+        passwordproxy: form.password,
+        usernameproxy: form.username,
+        tinhtrangproxy: "Không xoay",
+        thoigianxoay: 0,
+        soNgay: soNgay,
+        tenKhach: userPhone
+      };
+
+      const response = await fetch("https://proxynuoinick.com/api/api/tasks/start", {
+        method: "POST",
+        headers: {
+          "accept": "*/*",
+          "content-type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (result.status === "success") {
+        alert(`Đặt mua thành công ${result.count} proxy!`);
+        // Làm mới dữ liệu
+        fetchBalance();
+        fetchProxies();
+      } else {
+        alert(result.message || "Đặt mua thất bại. Vui lòng kiểm tra lại số dư.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi kết nối máy chủ khi đặt mua.");
+    } finally {
+      setIsOrdering(false);
+    }
+  };
+
   const handleCopyProxies = () => {
     if (proxies.length === 0) return;
     const textToCopy = proxies.map(p => `${p.ip}:${p.port}:${p.username}:${p.password}`).join('\n');
@@ -84,7 +124,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       .catch(err => console.error('Lỗi copy:', err));
   };
 
-  // Tính năng Tải TXT
   const handleDownloadTxt = () => {
     if (proxies.length === 0) return;
     const content = proxies.map(p => `${p.ip}:${p.port}:${p.username}:${p.password}`).join('\n');
@@ -103,7 +142,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     <div className="min-h-screen bg-[#070b14] pt-24 pb-12 px-4 md:px-8">
       <div className="max-w-[1400px] mx-auto">
         
-        {/* Navigation Tabs & Logout */}
         <div className="flex items-center space-x-8 mb-8 border-b border-slate-800/50 pb-4">
           <button onClick={() => setActiveTab('main')} className={`text-sm font-black uppercase tracking-widest transition-all ${activeTab === 'main' ? 'text-[#f97316]' : 'text-slate-500 hover:text-white'}`}>
             {t.navMain}
@@ -146,7 +184,11 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                 <div className="space-y-6">
                   <div>
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">{t.serverLocation}</label>
-                    <select className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none cursor-pointer focus:border-[#f97316]">
+                    <select 
+                      value={form.location}
+                      onChange={e => setForm({...form, location: e.target.value})}
+                      className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none cursor-pointer focus:border-[#f97316]"
+                    >
                       <option>Việt Nam - VNPT (Dân cư)</option>
                       <option>Việt Nam - FPT</option>
                     </select>
@@ -155,25 +197,41 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">USERNAME</label>
-                      <input type="text" placeholder="..." className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none focus:border-[#f97316]" />
+                      <input 
+                        type="text" 
+                        value={form.username}
+                        onChange={e => setForm({...form, username: e.target.value})}
+                        placeholder="..." 
+                        className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none focus:border-[#f97316]" 
+                      />
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">PASSWORD</label>
-                      <input type="text" placeholder="..." className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none focus:border-[#f97316]" />
+                      <input 
+                        type="text" 
+                        value={form.password}
+                        onChange={e => setForm({...form, password: e.target.value})}
+                        placeholder="..." 
+                        className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none focus:border-[#f97316]" 
+                      />
                     </div>
                   </div>
 
                   <div>
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">{t.protocol}</label>
                     <div className="grid grid-cols-2 gap-2">
-                      <button className="bg-[#f97316] text-white py-3 rounded-xl font-black text-xs uppercase">HTTPS</button>
+                      <button className="bg-[#f97316] text-white py-3 rounded-xl font-black text-xs uppercase shadow-lg shadow-orange-900/20">HTTPS</button>
                       <button className="bg-[#070b14] border border-slate-800 text-slate-500 py-3 rounded-xl font-black text-xs uppercase cursor-not-allowed">SOCKS5</button>
                     </div>
                   </div>
 
                   <div>
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">{t.duration}</label>
-                    <select className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none focus:border-[#f97316]">
+                    <select 
+                      value={form.duration}
+                      onChange={e => setForm({...form, duration: e.target.value})}
+                      className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-3.5 text-sm font-bold outline-none focus:border-[#f97316]"
+                    >
                       <option>1 Tháng</option>
                       <option>3 Tháng</option>
                       <option>1 Năm</option>
@@ -186,7 +244,13 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
 
                   <div>
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">{t.quantity}</label>
-                    <input type="number" value={form.quantity} onChange={e => setForm({...form, quantity: parseInt(e.target.value) || 1})} className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-4 text-lg font-black outline-none focus:border-[#f97316]" />
+                    <input 
+                      type="number" 
+                      min="1"
+                      value={form.quantity} 
+                      onChange={e => setForm({...form, quantity: Math.max(1, parseInt(e.target.value) || 1)})} 
+                      className="w-full bg-[#070b14] border border-slate-800 text-white rounded-xl p-4 text-lg font-black outline-none focus:border-[#f97316]" 
+                    />
                   </div>
 
                   <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
@@ -194,8 +258,12 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                     <span className="text-xl font-black text-[#f97316]">{(1000 * form.quantity).toLocaleString()} VND</span>
                   </div>
 
-                  <button className="w-full bg-[#f97316] hover:bg-orange-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-orange-900/20 uppercase tracking-widest transition-all transform active:scale-95">
-                    {t.buyBtn}
+                  <button 
+                    onClick={handleOrderProxy}
+                    disabled={isOrdering}
+                    className="w-full bg-[#f97316] hover:bg-orange-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-orange-900/20 uppercase tracking-widest transition-all transform active:scale-95 disabled:opacity-50"
+                  >
+                    {isOrdering ? 'ĐANG XỬ LÝ...' : t.buyBtn}
                   </button>
                 </div>
               </div>
@@ -213,6 +281,12 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                   
                   <div className="flex items-center space-x-3">
                     <button 
+                      onClick={fetchProxies}
+                      className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-white transition-all"
+                    >
+                      <svg className={`w-5 h-5 ${isLoadingProxies ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                    <button 
                       onClick={handleCopyProxies}
                       className="bg-slate-800/50 hover:bg-slate-700 text-slate-400 text-[10px] font-black py-2.5 px-5 rounded-xl uppercase flex items-center space-x-2 transition-all border border-slate-700"
                     >
@@ -226,55 +300,61 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                       <span>{t.downloadTxt}</span>
                     </button>
-                    <button 
-                      onClick={() => alert("Excel service is under maintenance.")}
-                      className="bg-slate-900 border border-slate-800 text-slate-300 text-[10px] font-black py-2.5 px-5 rounded-xl uppercase transition-all hover:bg-slate-800"
-                    >
-                      {t.exportExcel}
-                    </button>
                   </div>
                 </div>
 
                 <div className="overflow-x-auto flex-grow">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="bg-[#070b14] text-[9px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-800">
-                        <th className="px-8 py-5 w-16 text-center">
-                          <input type="checkbox" className="w-4 h-4 rounded bg-slate-800 border-slate-700 accent-[#f97316]" />
-                        </th>
-                        <th className="px-8 py-5">{t.tableIp}</th>
-                        <th className="px-8 py-5 text-center">{t.tableAccount}</th>
-                        <th className="px-8 py-5 text-center">{t.tableLocation}</th>
-                        <th className="px-8 py-5 text-center">{t.expiredAt}</th>
-                        <th className="px-8 py-5 text-center">{t.status}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/30">
-                      {proxies.map((p, i) => (
-                        <tr key={i} className="hover:bg-slate-800/20 transition-all group">
-                          <td className="px-8 py-6 text-center">
+                  {isLoadingProxies ? (
+                    <div className="flex items-center justify-center h-64">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f97316]"></div>
+                    </div>
+                  ) : (
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="bg-[#070b14] text-[9px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-800">
+                          <th className="px-8 py-5 w-16 text-center">
                             <input type="checkbox" className="w-4 h-4 rounded bg-slate-800 border-slate-700 accent-[#f97316]" />
-                          </td>
-                          <td className="px-8 py-6">
-                            <span className="text-white font-mono font-black text-sm">{p.ip}:{p.port}</span>
-                          </td>
-                          <td className="px-8 py-6 text-center">
-                            <span className="text-white text-xs font-bold">{p.username}</span>
-                            <div className="text-[10px] text-slate-600 font-mono tracking-tighter">*********</div>
-                          </td>
-                          <td className="px-8 py-6 text-center">
-                            <span className="text-slate-400 text-[10px] font-black uppercase">{p.location}</span>
-                          </td>
-                          <td className="px-8 py-6 text-center">
-                            <span className="text-slate-500 text-[10px] font-bold italic">{p.expiredAt}</span>
-                          </td>
-                          <td className="px-8 py-6 text-center">
-                            <span className="bg-green-500/10 text-green-500 border border-green-500/20 px-3 py-1 rounded-md text-[9px] font-black uppercase">LIVE</span>
-                          </td>
+                          </th>
+                          <th className="px-8 py-5">{t.tableIp}</th>
+                          <th className="px-8 py-5 text-center">{t.tableAccount}</th>
+                          <th className="px-8 py-5 text-center">{t.tableLocation}</th>
+                          <th className="px-8 py-5 text-center">{t.expiredAt}</th>
+                          <th className="px-8 py-5 text-center">{t.status}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/30">
+                        {proxies.length > 0 ? proxies.map((p, i) => (
+                          <tr key={i} className="hover:bg-slate-800/20 transition-all group">
+                            <td className="px-8 py-6 text-center">
+                              <input type="checkbox" className="w-4 h-4 rounded bg-slate-800 border-slate-700 accent-[#f97316]" />
+                            </td>
+                            <td className="px-8 py-6">
+                              <span className="text-white font-mono font-black text-sm">{p.ip}:{p.port}</span>
+                            </td>
+                            <td className="px-8 py-6 text-center">
+                              <span className="text-white text-xs font-bold">{p.username}</span>
+                              <div className="text-[10px] text-slate-600 font-mono tracking-tighter">{p.password.substring(0, 3)}****</div>
+                            </td>
+                            <td className="px-8 py-6 text-center">
+                              <span className="text-slate-400 text-[10px] font-black uppercase">{p.location}</span>
+                            </td>
+                            <td className="px-8 py-6 text-center">
+                              <span className="text-slate-500 text-[10px] font-bold italic">{p.expiredAt}</span>
+                            </td>
+                            <td className="px-8 py-6 text-center">
+                              <span className="bg-green-500/10 text-green-500 border border-green-500/20 px-3 py-1 rounded-md text-[9px] font-black uppercase">LIVE</span>
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan={6} className="px-8 py-20 text-center text-slate-600 font-bold uppercase tracking-widest text-xs">
+                              Chưa có dữ liệu proxy
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
 
                 <div className="p-4 bg-[#070b14] border-t border-slate-800 text-center">
