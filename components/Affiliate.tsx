@@ -38,9 +38,9 @@ const Affiliate: React.FC<{ t: any }> = ({ t }) => {
                 <p className="text-5xl md:text-7xl font-black text-white italic tracking-tighter shadow-sm">{t.commissionValue}</p>
               </div>
               <div className="mt-8 md:mt-0 md:pl-10 md:border-l border-white/20">
-                <button className="bg-white text-orange-600 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-orange-50 transition-all shadow-xl active:scale-95">
+                <a href="tel:0813149999" className="inline-block bg-white text-orange-600 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-orange-50 transition-all shadow-xl active:scale-95">
                   ĐĂNG KÝ NGAY
-                </button>
+                </a>
               </div>
             </div>
           </div>
