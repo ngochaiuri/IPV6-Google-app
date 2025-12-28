@@ -30,7 +30,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     if (!userPhone) return;
     setIsLoadingProxies(true);
     try {
-      // Sử dụng proxy URL nếu cần tránh CORS hoặc gọi trực tiếp nếu server cho phép
       const response = await fetch(`https://proxynuoinick.com/api/api/tasks/proxy?tenkhach=${userPhone}`);
       const data = await response.json();
       if (data?.du_lieu_proxy) {
@@ -47,13 +46,12 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
       }
     } catch (e) { 
       console.error(e); 
-      // Dữ liệu giả định để hiển thị đúng giao diện mẫu khi API lỗi hoặc trống
       setProxies([{
         id: 'demo-1',
         ip: '103.145.2.14',
         port: 8080,
         username: 'user_test',
-        password: '***',
+        password: 'password_demo',
         protocol: 'HTTP',
         location: 'Việt Nam (VNPT)',
         createdAt: '2024-05-20',
@@ -77,6 +75,30 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
     fetchProxies();
   }, [fetchBalance, fetchProxies]);
 
+  // Tính năng Sao chép
+  const handleCopyProxies = () => {
+    if (proxies.length === 0) return;
+    const textToCopy = proxies.map(p => `${p.ip}:${p.port}:${p.username}:${p.password}`).join('\n');
+    navigator.clipboard.writeText(textToCopy)
+      .then(() => alert(`Đã sao chép ${proxies.length} proxy vào bộ nhớ tạm!`))
+      .catch(err => console.error('Lỗi copy:', err));
+  };
+
+  // Tính năng Tải TXT
+  const handleDownloadTxt = () => {
+    if (proxies.length === 0) return;
+    const content = proxies.map(p => `${p.ip}:${p.port}:${p.username}:${p.password}`).join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `proxynuoinick_${userPhone}_${new Date().getTime()}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen bg-[#070b14] pt-24 pb-12 px-4 md:px-8">
       <div className="max-w-[1400px] mx-auto">
@@ -98,7 +120,6 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                <span className="text-white font-black">{balance.toLocaleString()}đ</span>
             </div>
             
-            {/* Nút Đăng xuất - Khôi phục và làm nổi bật */}
             <button 
               onClick={onLogout}
               className="bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/20 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center space-x-2"
@@ -191,15 +212,26 @@ const Dashboard: React.FC<DashboardProps> = ({ t, onLogout }) => {
                   </h2>
                   
                   <div className="flex items-center space-x-3">
-                    <button className="bg-slate-800/50 hover:bg-slate-700 text-slate-400 text-[10px] font-black py-2.5 px-5 rounded-xl uppercase flex items-center space-x-2 transition-all border border-slate-700">
+                    <button 
+                      onClick={handleCopyProxies}
+                      className="bg-slate-800/50 hover:bg-slate-700 text-slate-400 text-[10px] font-black py-2.5 px-5 rounded-xl uppercase flex items-center space-x-2 transition-all border border-slate-700"
+                    >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                       <span>SAO CHÉP</span>
                     </button>
-                    <button className="bg-slate-800/50 hover:bg-slate-700 text-slate-400 text-[10px] font-black py-2.5 px-5 rounded-xl uppercase flex items-center space-x-2 transition-all border border-slate-700">
+                    <button 
+                      onClick={handleDownloadTxt}
+                      className="bg-slate-800/50 hover:bg-slate-700 text-slate-400 text-[10px] font-black py-2.5 px-5 rounded-xl uppercase flex items-center space-x-2 transition-all border border-slate-700"
+                    >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                       <span>TẢI TXT</span>
                     </button>
-                    <button className="bg-slate-900 border border-slate-800 text-slate-300 text-[10px] font-black py-2.5 px-5 rounded-xl uppercase transition-all hover:bg-slate-800">XUẤT EXCEL</button>
+                    <button 
+                      onClick={() => alert("Chức năng xuất Excel đang được bảo trì.")}
+                      className="bg-slate-900 border border-slate-800 text-slate-300 text-[10px] font-black py-2.5 px-5 rounded-xl uppercase transition-all hover:bg-slate-800"
+                    >
+                      XUẤT EXCEL
+                    </button>
                   </div>
                 </div>
 
